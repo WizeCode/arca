@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
     return (
-        <html lang="pt-br" suppressHydrationWarning>
-            <body cz-shortcut-listen="true">
+        <html lang="pt-br">
+            <body cz-shortcut-listen="true" suppressHydrationWarning>
                 <header className="m-4!"><Header /></header>
 
                 <main className="m-4!">{children}</main>

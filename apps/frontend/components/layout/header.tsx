@@ -54,8 +54,8 @@ const Header = () => {
 
                                 return (
                                     <NavigationMenuItem key={link.label}>
-                                        <NavigationMenuLink asChild>
-                                            <Link href={link.href} className={`${isActive ? 'font-bold' : 'font-normal'} text-(--color-dark) relative after:content-[''] after:absolute after:-bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:h-px after:w-0 after:bg-(--color-dark) after:transition-all after:duration-250 after:ease-in-out hover:after:w-[calc(100%-4px)]`}>{link.label}</Link>
+                                        <NavigationMenuLink className="bg-transparent! hover:bg-transparent!" asChild>
+                                            <Link href={link.href} className={`${isActive ? 'font-bold' : 'font-normal'} text-(--color-dark) relative after:content-[''] after:absolute after:-bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:h-px after:w-0 after:bg-(--color-dark) after:transition-all after:duration-250 after:ease-in-out hover:after:w-full`}>{link.label}</Link>
                                         </NavigationMenuLink>
                                     </NavigationMenuItem>
                                 );
@@ -64,7 +64,7 @@ const Header = () => {
                     </NavigationMenu>
 
                     <div className="flex-1 hidden justify-end lg:flex">
-                        <Button asChild variant="primary">
+                        <Button size="lg" asChild>
                             <Link href='/login'>
                                 <LogIn color="#FFFFFF" />Acesso Interno
                             </Link>
@@ -97,7 +97,7 @@ const Header = () => {
                             </nav>
 
                             <SheetFooter>
-                                <Button asChild variant="primary">
+                                <Button size="lg" asChild>
                                     <Link href="/login">
                                         <LogIn color="#FFFFFF" />Acesso Interno
                                     </Link>
