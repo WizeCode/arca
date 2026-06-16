@@ -5,6 +5,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusListaEspera } from 'src/common/enums/status.enum';
 import { UUID } from 'node:crypto';
 import { CreateWaitlistDto } from './dto/create-waitlist.dto';
+import { WaitlistQueryDto } from './dto/waitlist-query.dto';
 
 describe('WaitlistService', () => {
     let service: WaitlistService;
@@ -33,6 +34,8 @@ describe('WaitlistService', () => {
 
         service = module.get<WaitlistService>(WaitlistService);
     });
+
+    afterEach(() => jest.clearAllMocks());
 
     it('should be defined', () => {
         expect(service).toBeDefined();
@@ -97,8 +100,8 @@ describe('WaitlistService', () => {
 
         describe('read', () => {
             describe('findAll', () => {
-                it('should return paginated waitlist', async () => {
-                    const pagination = { page: 1, limit: 20 };
+                it('should return paginated waitlist without filter', async () => {
+                    const pagination: WaitlistQueryDto = { page: 1, limit: 20 };
                     const patients = [{ id_Lista: 'uuid-1' }];
 
                     mockPrisma.listaEspera.findMany.mockResolvedValue(patients);
@@ -108,6 +111,27 @@ describe('WaitlistService', () => {
                     expect(result).toEqual({
                         data: patients,
                         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+                    });
+                    expect(mockPrisma.listaEspera.findMany).toHaveBeenCalledWith(
+                        expect.objectContaining({ where: {} }),
+                    );
+                    expect(mockPrisma.listaEspera.count).toHaveBeenCalledWith({ where: {} });
+                });
+
+                it('should filter by status when status is provided', async () => {
+                    const pagination: WaitlistQueryDto = { page: 1, limit: 20, status: StatusListaEspera.EM_ESPERA };
+                    const patients = [{ id_Lista: 'uuid-1', id_Status: StatusListaEspera.EM_ESPERA }];
+
+                    mockPrisma.listaEspera.findMany.mockResolvedValue(patients);
+                    mockPrisma.listaEspera.count.mockResolvedValue(1);
+
+                    const result = await service.findAll(pagination);
+                    expect(result.data).toEqual(patients);
+                    expect(mockPrisma.listaEspera.findMany).toHaveBeenCalledWith(
+                        expect.objectContaining({ where: { id_Status: StatusListaEspera.EM_ESPERA } }),
+                    );
+                    expect(mockPrisma.listaEspera.count).toHaveBeenCalledWith({
+                        where: { id_Status: StatusListaEspera.EM_ESPERA },
                     });
                 });
             });

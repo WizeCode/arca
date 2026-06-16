@@ -10,7 +10,8 @@ import { UpdateWaitlistDto } from './dto/update-waitlist.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UUID } from 'node:crypto';
 import { StatusListaEspera } from 'src/common/enums/status.enum';
-import { paginate, PaginationDto } from 'src/common/dto/pagination.dto';
+import { paginate } from 'src/common/dto/pagination.dto';
+import { WaitlistQueryDto } from './dto/waitlist-query.dto';
 
 @Injectable()
 export class WaitlistService {
@@ -72,17 +73,21 @@ export class WaitlistService {
         };
     }
 
-    async findAll(pagination: PaginationDto) {
-        const { page, limit } = pagination;
+    async findAll(pagination: WaitlistQueryDto) {
+        const { page, limit, status } = pagination;
+
+        
         const skip = (page - 1) * limit;
+        const where = status !== undefined ? { id_Status: status } : {};
 
         const [data, total] = await Promise.all([
             this.prisma.listaEspera.findMany({
                 skip,
                 take: limit,
+                where,
                 orderBy: { createdAt: 'desc' },
             }),
-            this.prisma.listaEspera.count(),
+            this.prisma.listaEspera.count({ where }),
         ]);
 
         return paginate(data, total, page, limit);

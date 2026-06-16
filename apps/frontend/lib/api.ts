@@ -1,16 +1,24 @@
+import type { PaginatedResponse, WaitlistEntry } from "./types";
+
 const API_BASE_URL = process.env.API_URL || "http://localhost:3333";
 const API_ENDPOINTS = {
     login: `${API_BASE_URL}/auth/login`,
     waitlist: `${API_BASE_URL}/waitlist`,
 } as const;
 
-export async function apiRequest(endpoint: string, options: RequestInit = {}) {
+export async function apiRequest(
+    endpoint: string,
+    options: RequestInit & { token?: string } = {}
+) {
+    const { token, ...fetchOptions } = options;
+
     const response = await fetch(endpoint, {
         headers: {
             "Content-Type": "application/json",
-            ...options.headers,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...fetchOptions.headers,
         },
-        ...options,
+        ...fetchOptions,
     });
 
     if (!response.ok) {
@@ -70,5 +78,15 @@ export const apiService = {
                 posicaoNaLista: number;
                 situacao: "Ativo" | "Inativo";
             }>,
+
+        findAll: (params: { page?: number; status?: number }, token: string) => {
+            const qs = new URLSearchParams();
+            if (params.page) qs.set("page", String(params.page));
+            if (params.status !== undefined) qs.set("status", String(params.status));
+            return apiRequest(`${API_ENDPOINTS.waitlist}?${qs}`, {
+                token,
+                cache: "no-store",
+            } as RequestInit & { token: string }) as Promise<PaginatedResponse<WaitlistEntry>>;
+        },
     },
 };

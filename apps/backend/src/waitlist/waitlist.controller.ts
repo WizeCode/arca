@@ -6,7 +6,7 @@ import { UpdateWaitlistDto } from './dto/update-waitlist.dto';
 import { UUID } from 'node:crypto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { WaitlistQueryDto } from './dto/waitlist-query.dto';
 
 @ApiTags('Lista de Espera')
 @Controller('waitlist')
@@ -28,8 +28,8 @@ export class WaitlistController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @Get()
-    findAll(@Query() pagination: PaginationDto) {
-        return this.waitlistService.findAll(pagination);
+    findAll(@Query() query: WaitlistQueryDto) {
+        return this.waitlistService.findAll(query);
     }
 
     @ApiOperation({ summary: 'Estatísticas públicas da fila (quantidade e última atualização)' })
