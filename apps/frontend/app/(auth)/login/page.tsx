@@ -1,5 +1,6 @@
 // Import Libs
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Import Components
 import FormLogin from '@/components/forms/form-login';
@@ -37,8 +38,8 @@ const Login = () => {
                     </div>
                 </div>
 
-                <div className="bg-(--color-mlight) flex-1 hidden flex-col lg:flex">
-                    {/* Imagem da Fac+ */}
+                <div className="bg-(--color-mlight) flex-1 hidden lg:flex">
+                    <Image src="/Logo Preta@2x.png" alt="Login Image" width={3840} height={3840} className="w-full h-auto object-contain" loading="eager" />
                 </div>
             </div>
         </>

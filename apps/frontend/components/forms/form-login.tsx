@@ -142,7 +142,7 @@ const FormLogin = () => {
                     />
                     
                     <Field orientation="horizontal" className="mt-6!">
-                        <Button form="form-login" type="submit" variant="primary" className="w-full" disabled={isLoading}>
+                        <Button size="lg" className="w-full" form="form-login" type="submit" disabled={isLoading}>
                             {isLoading ? "Carregando..." : "Entrar"}
                         </Button>
                     </Field>

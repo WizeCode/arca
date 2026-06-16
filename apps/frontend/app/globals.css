@@ -43,16 +43,15 @@
 }
 
 :root {
-    /* ARCA custom palette */
+    /* ARCA */
+    --default-font: 'Geist', sans-serif;
+
     --color-dark: #000000;
     --color-mdark: #404040;
     --color-medium: #808080;
     --color-mlight: #C0C0C0;
     --color-light: #FFFFFF;
 
-    --default-font: 'Geist', sans-serif;
-
-    /* shadcn/ui — valores diretos mapeados para o ARCA */
     --background: #FFFFFF;
     --foreground: #000000;
     --card: #FFFFFF;
@@ -73,7 +72,6 @@
     --ring: #808080;
     --radius: 0.5rem;
 
-    /* sidebar */
     --sidebar: #F8F8F8;
     --sidebar-foreground: #000000;
     --sidebar-primary: #000000;

@@ -10,7 +10,7 @@
     },
     "devDependencies": {
         "@types/handlebars": "^4.0.40",
-        "concurrently": "^9.2.1",
+        "concurrently": "^10.0.3",
         "cross-env": "^7.0.3",
         "prettier": "^3.6.2",
         "tsc-alias": "^1.8.16",
@@ -28,7 +28,8 @@
     "dependencies": {
         "@nestjs/mapped-types": "*",
         "handlebars": "^4.7.8",
-        "next-auth": "^4.24.11",
+        "next": "^16.2.9",
+        "next-auth": "^4.24.14",
         "puppeteer": "^24.28.0",
         "react-big-calendar": "^1.19.4"
     }
