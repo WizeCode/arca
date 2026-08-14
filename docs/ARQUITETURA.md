@@ -3,6 +3,7 @@
 Este documento é o mapa único do projeto: o que é, como está construído, o que já existe e o que falta. Se você está chegando agora — como colaborador ou voltando depois de um tempo parado — comece por aqui, não pelo Swagger. O Swagger mostra os endpoints; este documento mostra por que eles existem e como se encaixam.
 
 Documentação relacionada:
+
 - `README.md` — como instalar e rodar o projeto localmente
 - `CLAUDE.md` — referência técnica rápida para sessões de desenvolvimento assistido (comandos, estrutura de pastas)
 - `docs/adr/` — o histórico de decisões de arquitetura, uma por arquivo, nunca reescritas (só substituídas por uma ADR nova quando a decisão muda)
@@ -16,7 +17,7 @@ Nasceu como TCC, mas é tratado como produto comercial real desde então — dec
 ## 2. Stack e por que essas escolhas
 
 | Camada | Tecnologia | Por quê |
-|---|---|---|
+| --- | --- | --- |
 | Backend | NestJS + Prisma + PostgreSQL | Tipagem forte ponta a ponta, migrations versionadas, estrutura modular que escala bem pra um time pequeno |
 | Frontend | Next.js 15 (App Router) + Server Actions | Sem camada de API intermediária no frontend — Server Actions falam direto com o backend, menos código de integração pra manter |
 | Monorepo | Turborepo | Backend e frontend num repo só, cache de build compartilhado |
@@ -25,13 +26,14 @@ Nasceu como TCC, mas é tratado como produto comercial real desde então — dec
 
 ## 3. Como as peças se encaixam
 
-```
+```text
 Usuário → Next.js (Server Actions) → NestJS API → Prisma → PostgreSQL (Supabase)
                 ↓
            NextAuth (sessão, JWT)
 ```
 
 Decisões travadas para o frontend (detalhe completo no `CLAUDE.md`):
+
 - Toda leitura/escrita de dado passa por Server Action, nunca por hook client-side batendo direto na API
 - Route Handlers existem só para o NextAuth
 - Nenhuma env var `NEXT_PUBLIC_` além do que o NextAuth exige
@@ -114,7 +116,7 @@ Fora do diagrama por clareza: tabelas de apoio globais (`Genero`, `Etnia`, `Esco
 ### Papéis
 
 | Papel | Acesso |
-|---|---|
+| --- | --- |
 | Coordenador (ADMIN) | Tudo, incluindo auditoria e gestão de usuários |
 | Secretário | Agendamento, lista de espera, visão de fluxo completo |
 | Supervisor | Aprova relatórios de estagiários, gera documentos finais, vê só seus pacientes |
@@ -123,7 +125,7 @@ Fora do diagrama por clareza: tabelas de apoio globais (`Genero`, `Etnia`, `Esco
 ## 5. Status atual
 
 | Área | Status | Observação |
-|---|---|---|
+| --- | --- | --- |
 | Backend — módulos core | ✅ Pronto | auth, users, waitlist, session, medical_record, audit, crypto, pdf |
 | Backend — segurança base | ✅ Pronto | RBAC, rate limiting, helmet, JWT audience/issuer, auditoria global |
 | Backend — multi-tenancy (schema) | 🔜 Planejado | ADR 0001 — issue aberta, ainda não implementado |

@@ -46,17 +46,20 @@ Este é um monorepo gerenciado pelo [Turborepo](https://turborepo.org/) contendo
 ### Instalação
 
 1. **Clone o repositório**
+
    ```bash
    git clone https://github.com/pedrokourly/arca.git
    cd arca
    ```
 
 2. **Instale as dependências**
+
    ```bash
    npm install
    ```
 
 3. **Configure o banco de dados**
+
    ```bash
    # Crie um arquivo .env no diretório backend
    cp apps/backend/.env.example apps/backend/.env
@@ -66,12 +69,14 @@ Este é um monorepo gerenciado pelo [Turborepo](https://turborepo.org/) contendo
    ```
 
 4. **Execute as migrações**
+
    ```bash
    cd apps/backend
    npx prisma migrate dev
    ```
 
 5. **Inicie o desenvolvimento**
+
    ```bash
    # Volta para a raiz do projeto
    cd ../..
@@ -82,36 +87,41 @@ Este é um monorepo gerenciado pelo [Turborepo](https://turborepo.org/) contendo
 
 ### Acesso ao Sistema
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3333
+- **Frontend**: <http://localhost:3000>
+- **Backend API**: <http://localhost:3333>
 - **Prisma Studio**: `npx prisma studio` (no diretório backend)
 
 ## 📋 Funcionalidades
 
 ### Gestão de Usuários
+
 - Cadastro de estagiários e supervisores
 - Controle de acesso baseado em roles
 - Autenticação segura
 
 ### Gestão de Pacientes
+
 - Cadastro completo com dados demográficos
 - Histórico de atendimentos
 - Relatórios de progresso
 - Lista de espera organizada
 
 ### Sistema de Atendimentos
+
 - Agendamento de consultas
 - Registro de observações
 - Status de acompanhamento
 - Histórico completo
 
 ### Documentação
+
 - Upload de arquivos
 - Versionamento de documentos
 - Relatórios de alta
 - Controle de acesso aos documentos
 
 ### Auditoria e Compliance
+
 - Log de todas as operações
 - Rastreabilidade completa
 - Relatórios de auditoria
@@ -142,7 +152,7 @@ npx prisma generate      # Regenera o cliente Prisma
 
 ## 📁 Estrutura do Projeto
 
-```
+```text
 arca/
 ├── apps/
 │   ├── backend/              # API NestJS

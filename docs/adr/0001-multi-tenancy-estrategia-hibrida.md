@@ -31,11 +31,13 @@ Features de produto multi-tenant (onboarding, painel de gestão, billing, config
 ## Consequências
 
 **Positivas:**
+
 - Nenhuma migração de retrofit dolorosa quando o primeiro cliente real chegar.
 - O gap de segurança nº 1 do projeto (BOLA multi-tenant) é endereçado pela raiz, não por vigilância manual em cada endpoint.
 - Trabalho adicional imediato é pequeno (uma tabela nova, uma coluna em cinco modelos, uma extension).
 
 **Negativas / trade-offs:**
+
 - Todo endpoint que já existe precisa ser revisado para passar a respeitar o escopo de clínica — trabalho pontual, mas não zero.
 - Sem uma segunda clínica real ainda, há risco de over-engineering se a modelagem de `Clinica` for além do necessário — por isso o escopo aqui é deliberadamente mínimo (id, nome, slug, isActive).
 

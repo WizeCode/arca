@@ -18,7 +18,7 @@ estático. No ARCA, existem **dois tipos de conteúdo**, e a regra muda pra cada
 um:
 
 | Tipo | Exemplo | Onde mora |
-|---|---|---|
+| --- | --- | --- |
 | **Copy estático de UI** | Título da página, texto de empty state, label de botão | `[modulo].data.ts`, igual ao site |
 | **Dado dinâmico de aplicação** | Paciente, atendimento, prontuário, lista de espera | Vem via Server Action, nunca em `.data.ts` |
 
@@ -44,7 +44,7 @@ const EmptyState = ({ title }: EmptyStateProps) => <p>{title}</p>
 ## 2. A linha entre copy estático, dado dinâmico e componente
 
 | Vai para `[modulo].data.ts` (copy estático) | Vem de Server Action (dado dinâmico) | Fica no componente (estrutura) |
-|---|---|---|
+| --- | --- | --- |
 | Título da página, subtítulos | Lista de pacientes, atendimentos | Arranjo/layout (`flex`, `grid`) |
 | Texto de empty state | Status de um atendimento | Tipografia e espaçamento do esqueleto |
 | Label de botão, placeholder de campo | Conteúdo de um prontuário | Animações e transições |
@@ -241,7 +241,7 @@ interface DetailPageProps {
 Uso mapeado:
 
 | Template | Módulos |
-|---|---|
+| --- | --- |
 | `ListPage` | Lista de Espera, Agenda, Atendimentos, Pacientes, Admin/Usuários |
 | `DetailPage` | Paciente, Atendimento, Prontuário |
 
@@ -295,7 +295,7 @@ automatizado via Conventional Commits — retomando a proposta já aberta na
 [issue #74](https://github.com/pedrokourly/arca/issues/74).
 
 | Merge | Como | Por quê |
-|---|---|---|
+| --- | --- | --- |
 | `feature/*` / `fix/*` → `development` | PR com **squash** | Cada feature vira um commit limpo |
 | `development` → `release/x.y.z` | Branch nova, quando pronto pra congelar | Estabiliza enquanto `development` segue pra próxima versão |
 | `release/*` → `main` | PR com **merge normal** (nunca squash) | Preserva ancestralidade — squash aqui gera conflito `add/add` no ciclo seguinte |
@@ -321,7 +321,7 @@ automatizado via Conventional Commits — retomando a proposta já aberta na
    `package.json` raiz — não versiona os dois apps separadamente
 
 | Tipo de commit | Impacto na versão |
-|---|---|
+| --- | --- |
 | `fix` | patch |
 | `feat` | minor |
 | `BREAKING CHANGE` | major |
