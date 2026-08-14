@@ -1,11 +1,12 @@
-# ARCA - Sistema de Gestão para Clínica de Psicologia
+# ARCA - Sistema de Gestão para Clínicas de Psicologia
 
-Sistema completo de gestão para clínicas de psicologia, desenvolvido como projeto de conclusão de curso. O ARCA facilita o gerenciamento de pacientes, atendimentos, documentos e relatórios, oferecendo controle de acesso baseado em funções e auditoria completa das operações.
+Plataforma SaaS multi-tenant de gestão para clínicas de psicologia. O ARCA facilita o gerenciamento de pacientes, atendimentos, documentos e relatórios, oferecendo controle de acesso baseado em funções, auditoria completa das operações e isolamento de dados entre clínicas (tenants).
 
 ## 🎯 Visão Geral
 
-O sistema ARCA (Ambiente de Registro e Controle de Atendimentos) é uma solução full-stack projetada para otimizar a gestão de clínicas de psicologia, proporcionando:
+O sistema ARCA (Ambiente de Registro e Controle de Atendimentos) é uma solução full-stack multi-tenant projetada para atender múltiplas clínicas de psicologia de forma isolada e segura, proporcionando:
 
+- **Multi-tenant**: Isolamento completo de dados entre clínicas distintas
 - **Gestão de Pacientes**: Cadastro completo com dados pessoais e histórico
 - **Lista de Espera**: Controle de candidatos aguardando atendimento
 - **Agendamento**: Sistema de marcação e controle de consultas
@@ -13,6 +14,10 @@ O sistema ARCA (Ambiente de Registro e Controle de Atendimentos) é uma soluçã
 - **Relatórios**: Geração de relatórios de alta e acompanhamento
 - **Auditoria**: Log completo de todas as operações realizadas
 - **Controle de Acesso**: Sistema de roles para estagiários e supervisores
+
+### Status Atual
+
+O backend está estabilizado (segurança, RBAC, auditoria, testes). O frontend está em reconstrução ativa a partir do zero — a estrutura antiga (pré-reescrita) segue apenas como referência de regras de negócio, não como fonte de verdade. Ver `CLAUDE.md` para detalhes de arquitetura atualizados.
 
 ## 🏗️ Arquitetura
 
@@ -28,7 +33,7 @@ Este é um monorepo gerenciado pelo [Turborepo](https://turborepo.org/) contendo
 - **Backend**: NestJS, Prisma ORM, PostgreSQL
 - **Frontend**: Next.js 15, React 19, TypeScript, TailwindCSS
 - **Desenvolvimento**: TypeScript, ESLint, Prettier
-- **Deploy**: Preparado para containerização com Docker
+- **Deploy**: Docker + Coolify (CD automático)
 
 ## 🚀 Início Rápido
 
@@ -41,41 +46,36 @@ Este é um monorepo gerenciado pelo [Turborepo](https://turborepo.org/) contendo
 ### Instalação
 
 1. **Clone o repositório**
-
    ```bash
    git clone https://github.com/pedrokourly/arca.git
    cd arca
    ```
 
 2. **Instale as dependências**
-
    ```bash
    npm install
    ```
 
 3. **Configure o banco de dados**
-
    ```bash
    # Crie um arquivo .env no diretório backend
    cp apps/backend/.env.example apps/backend/.env
-
+   
    # Configure a string de conexão do PostgreSQL
    DATABASE_URL="postgresql://usuario:senha@localhost:5432/arca_db"
    ```
 
 4. **Execute as migrações**
-
    ```bash
    cd apps/backend
    npx prisma migrate dev
    ```
 
 5. **Inicie o desenvolvimento**
-
    ```bash
    # Volta para a raiz do projeto
    cd ../..
-
+   
    # Inicia backend (porta 3333) e frontend (porta 3000) simultaneamente
    npm run dev
    ```
@@ -89,34 +89,29 @@ Este é um monorepo gerenciado pelo [Turborepo](https://turborepo.org/) contendo
 ## 📋 Funcionalidades
 
 ### Gestão de Usuários
-
 - Cadastro de estagiários e supervisores
 - Controle de acesso baseado em roles
 - Autenticação segura
 
 ### Gestão de Pacientes
-
 - Cadastro completo com dados demográficos
 - Histórico de atendimentos
 - Relatórios de progresso
 - Lista de espera organizada
 
 ### Sistema de Atendimentos
-
 - Agendamento de consultas
 - Registro de observações
 - Status de acompanhamento
 - Histórico completo
 
 ### Documentação
-
 - Upload de arquivos
 - Versionamento de documentos
 - Relatórios de alta
 - Controle de acesso aos documentos
 
 ### Auditoria e Compliance
-
 - Log de todas as operações
 - Rastreabilidade completa
 - Relatórios de auditoria
@@ -159,15 +154,13 @@ arca/
 │   │   │   ├── schema.prisma # Schema do banco de dados
 │   │   │   └── migrations/   # Migrações do banco
 │   │   └── package.json
-│   └── frontend/             # Interface Next.js
-│       ├── src/
-│       │   ├── app/         # App Router
-│       │   ├── components/  # Componentes React
-│       │   ├── contexts/    # Contextos React
-│       │   ├── hooks/       # Custom hooks
-│       │   └── lib/         # Utilitários
+│   └── frontend/             # Interface Next.js (em reconstrução)
+│       ├── app/
+│       │   ├── (auth)/       # Rotas autenticadas, incl. /plataforma
+│       │   ├── (external)/   # Rotas públicas
+│       │   └── api/          # Route Handlers (NextAuth)
 │       └── package.json
-├── packages/                 # Packages compartilhados (futuro)
+├── packages/                 # Packages compartilhados (futuro: domain)
 ├── turbo.json               # Configuração Turborepo
 └── package.json             # Configuração raiz
 ```
@@ -185,21 +178,18 @@ O sistema utiliza um modelo relacional robusto com as seguintes entidades princi
 
 ## 🔒 Segurança e Compliance
 
-- Autenticação baseada em JWT
-- Controle de acesso granular por roles
+- Autenticação baseada em JWT (audience/issuer validados)
+- Controle de acesso granular por roles (RBAC)
 - Criptografia de senhas com hash seguro
 - Logs de auditoria para compliance
 - Validação de dados em múltiplas camadas
-- Preparado para conformidade com LGPD
+- Conformidade com LGPD
 
 ## 🚢 Deploy
 
-O projeto está preparado para deploy com:
-
-- **Docker**: Containerização para fácil deploy
-- **Vercel**: Frontend Next.js
-- **Railway/Heroku**: Backend NestJS
-- **Supabase/Neon**: PostgreSQL gerenciado
+- **Coolify**: CD com deploy automático a cada push (backend e frontend)
+- **Supabase**: PostgreSQL gerenciado
+- **Docker**: Containerização para build e deploy
 
 ## 🤝 Contribuição
 
@@ -215,7 +205,7 @@ Este projeto é licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE)
 
 ## 👥 Equipe
 
-Desenvolvido como projeto de TCC por Pedro Kourly
+Desenvolvido por Pedro Kourly.
 
 ---
 

@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ARCA** is a psychology clinic management system (Brazilian Portuguese UI) built as a Turborepo monorepo with two apps:
+**ARCA** is a multi-tenant psychology clinic management SaaS (Brazilian Portuguese UI) built as a Turborepo monorepo with two apps:
 
 - `apps/backend` — NestJS REST API on port 3333
-- `apps/frontend` — Next.js 15 web app on port 3000
+- `apps/frontend` — Next.js 15 web app on port 3000, currently under active rebuild
 
-Domain: patient waitlist, therapy sessions (atendimentos), medical records (prontuários), audit logging, and role-based access for estagiários (interns) and supervisors.
+Domain: patient waitlist, therapy sessions (atendimentos), medical records (prontuários), audit logging, and role-based access for estagiários (interns) and supervisors. This originated as an academic thesis project but is now developed as a commercial product (co-founded at WizeCode) — treat technical decisions as production-grade, not academic-scope.
 
 ## Commands
 
@@ -56,7 +56,7 @@ npx prisma generate               # Regenerate Prisma client
 Standard NestJS modular architecture. Each domain is a self-contained module in `apps/backend/src/`:
 
 | Module            | Purpose                                                   |
-| ----------------- | --------------------------------------------------------- |
+| ------------------ | --------------------------------------------------------- |
 | `auth/`           | JWT + Local strategies, Passport guards, login endpoint   |
 | `users/`          | User CRUD (estagiários/supervisors)                       |
 | `waitlist/`       | Patient waiting list (lista de espera)                    |
@@ -74,6 +74,8 @@ Standard NestJS modular architecture. Each domain is a self-contained module in 
 - Role-based access controlled via `roleId` on `Usuario` model
 - Medical record `conteudo` field is encrypted at rest using `CryptoService`
 
+**Domain entities (planned, not yet in codebase):** the intended direction is to move business logic out of services operating on raw Prisma types and into rich domain classes (e.g. `Atendimento`, `Prontuario`) with factory methods (`fromPrisma()`, `fromJSON()`). Prisma models stay data-only. As of the last audit, this pattern hasn't landed in `apps/backend/src` yet — check before assuming it's implemented. A shared `packages/domain` Turborepo package is the candidate home for this once it exists on both frontend and backend.
+
 **Medical record types** (DTOs in `medical_record/dto/`):
 
 - `triagem` — initial triage record
@@ -81,44 +83,67 @@ Standard NestJS modular architecture. Each domain is a self-contained module in 
 - `alta` — discharge report
 - `encaminhamento` — referral
 
-### Frontend (Next.js 15 App Router)
+### Frontend (Next.js 15 App Router) — actively being rebuilt from scratch
 
-Authentication uses **NextAuth v4** with a Credentials provider that calls the backend `/auth/login` endpoint. The JWT token from the backend is stored in the NextAuth session.
+The pre-rebuild frontend (last state at commit `2c62150476c92fdabc61459f2bca6f691bc7965b`) is kept **only as a business-logic reference** — its routes and components below are historical, not current.
 
-- `middleware.ts` — protects `/dashboard/*` routes, enforces role-based redirects
-- `lib/api.ts` — Axios instance that automatically injects `Authorization: Bearer {token}` from NextAuth session
-- `app/api/auth/[...nextauth]/route.ts` — NextAuth handler
-- `components/ui/` — shadcn/ui components (new-york style, neutral base, lucide icons)
+**Locked-in architecture decisions for the rebuild:**
 
-**Auth flow:** Login form → NextAuth CredentialsProvider → backend `/auth/login` → JWT stored in session → Axios interceptor adds token to all API calls.
+- Server Actions for all data fetching/mutations (no client-side data-fetching hooks hitting the backend directly)
+- Route Handlers used exclusively for NextAuth (`app/api/auth/[...nextauth]/route.ts`)
+- No `NEXT_PUBLIC_` env vars except what NextAuth itself requires
+- Authenticated app lives under `/plataforma/*`
+- Route groups: `(auth)` for authenticated routes, `(external)` for public routes
 
-**Route structure:**
+**Current structure (as of last audit):**
 
 ```
 app/
-├── login/                          # Public login page
-├── lista-espera/
-│   ├── cadastro/                   # Public patient self-registration
-│   └── consulta/                   # Public waitlist position check
-└── dashboard/                      # All protected (requires auth)
-    ├── agenda/                     # Calendar view
-    ├── atendimento/
-    │   └── cadastro/               # Create new session
-    ├── auditoria/                  # Audit logs viewer
-    ├── fluxo-atendimento/          # Session workflow
-    ├── lista-espera/               # Waitlist management
-    │   └── cadastro/
-    ├── pacientes/[id]/             # Patient detail
-    ├── perfil/                     # User profile
-    ├── relatorios/
-    │   ├── psicoterapia/[id]/      # Psychotherapy report (edit, aprovar)
-    │   └── triagem/[id]/           # Triage report (edit, aprovar)
-    ├── unauthorized/               # Access denied page
-    └── usuarios/
-        └── cadastro/               # Create user
+├── (auth)/
+│   ├── layout.tsx
+│   ├── login/
+│   └── plataforma/
+│       ├── layout.tsx     # Sidebar shell, role-based nav filtering
+│       └── page.tsx       # Dashboard — currently a skeleton/placeholder
+├── (external)/            # Public routes
+├── api/
+│   └── auth/[...nextauth]/route.ts
+└── globals.css
 ```
 
-**Auth components** (`components/auth/`):
+Only the platform shell exists so far (sidebar, route-protection middleware, empty dashboard). No domain modules (pacientes, atendimentos, waitlist, etc.) have been migrated into the new structure yet — that work is tracked incrementally via GitHub milestones M0–M12, one `feat:` issue per module. Check open issues/milestones for what's next rather than assuming from this file.
+
+Authentication uses **NextAuth v4** with a Credentials provider that calls the backend `/auth/login` endpoint. The JWT token from the backend is stored in the NextAuth session.
+
+- `middleware.ts` — protects `/plataforma/*` routes, enforces role-based redirects
+- `components/ui/` — shadcn/ui components (new-york style, neutral base, lucide icons)
+
+**Auth flow:** Login form → NextAuth CredentialsProvider → backend `/auth/login` → JWT stored in session → Server Actions read the session server-side to authenticate backend calls.
+
+**Historical route structure (pre-rebuild, reference only — do not build against this):**
+
+```
+app/
+├── login/
+├── lista-espera/
+│   ├── cadastro/
+│   └── consulta/
+└── dashboard/                       # superseded by /plataforma
+    ├── agenda/
+    ├── atendimento/cadastro/
+    ├── auditoria/
+    ├── fluxo-atendimento/
+    ├── lista-espera/cadastro/
+    ├── pacientes/[id]/
+    ├── perfil/
+    ├── relatorios/
+    │   ├── psicoterapia/[id]/
+    │   └── triagem/[id]/
+    ├── unauthorized/
+    └── usuarios/cadastro/
+```
+
+**Auth components** (`components/auth/`, pre-rebuild reference):
 
 - `ConditionalRender.tsx` — renders children only if user has required role
 - `ProtectedRoute.tsx` — client-side route guard
@@ -155,7 +180,7 @@ Understanding this flow is essential — the entire system models it:
 Four roles with decreasing privileges (stored as `roleId` on `Usuario`):
 
 | Role         | PT Name     | Key Permissions                                                                    |
-| ------------ | ----------- | ---------------------------------------------------------------------------------- |
+| ------------ | ----------- | ------------------------------------------------------------------------------------ |
 | `ADMIN`      | Coordenador | Full access including audit logs, fluxo-atendimento dashboard, user management     |
 | `SECRETARIO` | Secretário  | Schedule sessions, manage waitlist, view fluxo-atendimento, manage patients        |
 | `SUPERVISOR` | Supervisor  | Approve/reject intern reports, generate alta/encaminhamento, see own patients only |
@@ -163,11 +188,12 @@ Four roles with decreasing privileges (stored as `roleId` on `Usuario`):
 
 Critical access rules:
 
-- **Audit logs** (`/dashboard/auditoria`): Coordinator only
-- **Fluxo de atendimento** (`/dashboard/fluxo-atendimento`): Coordinator + Secretary only
+- **Audit logs**: Coordinator only
+- **Fluxo de atendimento**: Coordinator + Secretary only
 - **Patient visibility**: Coordinator/Secretary see all patients; Supervisor/Estagiário see only their assigned patients
 - **User creation**: A user can only create users with a role equal to or lower than their own
 - **Waitlist**: All internal roles can read/edit; public can self-register and check position
+- **Multi-tenancy**: no authenticated user should be able to reach another tenant's resources by substituting an ID — this is the highest-priority security gap to keep re-verifying (BOLA) as new endpoints are built
 
 ### Regulatory Context
 
