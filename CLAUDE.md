@@ -56,7 +56,7 @@ npx prisma generate               # Regenerate Prisma client
 Standard NestJS modular architecture. Each domain is a self-contained module in `apps/backend/src/`:
 
 | Module            | Purpose                                                   |
-| ------------------ | --------------------------------------------------------- |
+| ----------------- | --------------------------------------------------------- |
 | `auth/`           | JWT + Local strategies, Passport guards, login endpoint   |
 | `users/`          | User CRUD (estagiários/supervisors)                       |
 | `waitlist/`       | Patient waiting list (lista de espera)                    |
@@ -97,7 +97,7 @@ The pre-rebuild frontend (last state at commit `2c62150476c92fdabc61459f2bca6f69
 
 **Current structure (as of last audit):**
 
-```
+```text
 app/
 ├── (auth)/
 │   ├── layout.tsx
@@ -122,7 +122,7 @@ Authentication uses **NextAuth v4** with a Credentials provider that calls the b
 
 **Historical route structure (pre-rebuild, reference only — do not build against this):**
 
-```
+```text
 app/
 ├── login/
 ├── lista-espera/
@@ -180,7 +180,7 @@ Understanding this flow is essential — the entire system models it:
 Four roles with decreasing privileges (stored as `roleId` on `Usuario`):
 
 | Role         | PT Name     | Key Permissions                                                                    |
-| ------------ | ----------- | ------------------------------------------------------------------------------------ |
+| ------------ | ----------- | ---------------------------------------------------------------------------------- |
 | `ADMIN`      | Coordenador | Full access including audit logs, fluxo-atendimento dashboard, user management     |
 | `SECRETARIO` | Secretário  | Schedule sessions, manage waitlist, view fluxo-atendimento, manage patients        |
 | `SUPERVISOR` | Supervisor  | Approve/reject intern reports, generate alta/encaminhamento, see own patients only |
@@ -206,7 +206,7 @@ Critical access rules:
 
 **Backend** (`apps/backend/.env`):
 
-```
+```text
 DATABASE_URL=           # Supabase connection pooling URL
 DIRECT_URL=             # Direct URL for Prisma migrations
 JWT_SECRET=
@@ -218,7 +218,7 @@ ENCRYPTION_KEY=         # AES key for medical record encryption
 
 **Frontend** (`apps/frontend/.env`):
 
-```
+```text
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=
 API_URL=http://localhost:3333   # or http://arca_backend:3333 in Docker
