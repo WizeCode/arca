@@ -105,6 +105,19 @@ erDiagram
 
 Fora do diagrama por clareza: tabelas de apoio globais (`Genero`, `Etnia`, `Escolaridade`, `StatusListaEspera`, `StatusAtendimento`, `TipoAtendimento`, `StatusProntuario`, `TipoProntuario`) — são lookups compartilhados entre todas as clínicas, não têm `id_Clinica`.
 
+### Roles de banco de dados
+
+O Postgres é acessado por dois roles distintos, com privilégios diferentes:
+
+- **`arca_app`** — role de aplicação, least-privilege. É quem `DATABASE_URL` autentica; o backend NestJS e o `prisma db seed` rodam com esse role. Tem só `USAGE` no schema `public` e `SELECT`/`INSERT`/`UPDATE`/`DELETE` nas tabelas — sem permissão de alterar estrutura (criar/dropar tabela, coluna, etc.).
+- **Role dono do schema** (superuser, ex. `postgres`) — é quem `DIRECT_URL` autentica. Só é usado pelo Prisma Migrate (`migrate dev`/`migrate deploy`/`migrate reset`), inclusive pra criar o shadow database exigido pelo `migrate dev`. Nunca é usado em runtime da aplicação.
+
+Os privilégios de `arca_app` são concedidos via migração normal (`prisma/migrations/20260816214907_grant_arca_app_privileges/`), executada com o role dono do schema — não é um passo manual à parte. Isso significa que um banco novo, rodando só `prisma migrate deploy`, já sai com `arca_app` funcional.
+
+O que a migração **não** faz — de propósito — é criar o role `arca_app` em si (`CREATE ROLE ... PASSWORD ...`). Roles são objetos do cluster Postgres, não do schema de uma aplicação específica, e a senha não pode ir pro Git. Por isso, provisionar `arca_app` (criar o role com login e senha própria por ambiente) é um passo de infraestrutura que precisa acontecer *antes* da primeira migração rodar em qualquer ambiente novo — se não acontecer, a migração de grants falha alto e claro ("role arca_app does not exist") em vez de deixar a aplicação falhar silenciosamente depois, em tempo de query.
+
+Essa separação de roles é a base sobre a qual o enforcement de tenant via Row-Level Security (ADR 0001) vai se apoiar — é o que já existe hoje, mesmo antes do RLS em si estar implementado.
+
 ### Fluxo clínico (o que o sistema modela)
 
 1. **Em Espera** — paciente se autocadastra publicamente, recebe UUID pra consultar posição
