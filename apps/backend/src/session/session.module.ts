@@ -9,4 +9,4 @@ import { CryptoModule } from 'src/crypto/crypto.module';
     controllers: [SessionController],
     providers: [SessionService],
 })
-export class SessionModule { }
+export class SessionModule {}

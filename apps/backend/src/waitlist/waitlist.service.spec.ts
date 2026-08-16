@@ -84,7 +84,10 @@ describe('WaitlistService', () => {
                     id_Escolaridade: 1,
                 } as CreateWaitlistDto;
 
-                mockPrisma.listaEspera.findFirst.mockResolvedValue({ id_Lista: 'uuid-existente', CPF: '123.456.789-00' });
+                mockPrisma.listaEspera.findFirst.mockResolvedValue({
+                    id_Lista: 'uuid-existente',
+                    CPF: '123.456.789-00',
+                });
                 await expect(service.create(body)).rejects.toThrow(BadRequestException);
             });
         });

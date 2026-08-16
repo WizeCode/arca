@@ -19,7 +19,7 @@ describe('AuditInterceptor', () => {
     }
 
     beforeEach(() => {
-        jest.spyOn(Logger.prototype, 'error').mockImplementation(() => { });
+        jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
         jest.clearAllMocks();
         mockAuditService.create.mockResolvedValue(undefined);
         interceptor = new AuditInterceptor(mockAuditService as any);

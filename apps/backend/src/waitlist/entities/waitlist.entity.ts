@@ -1,1 +1,1 @@
-export class Waitlist { }
+export class Waitlist {}

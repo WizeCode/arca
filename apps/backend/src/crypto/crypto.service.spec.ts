@@ -44,7 +44,9 @@ describe('CryptoService', () => {
     });
 
     it('deve lançar erro se o formato for inválido (sem ":")', () => {
-        expect(() => service.decrypt('dado-invalido-sem-separadores')).toThrow('Formato de dado criptografado inválido.');
+        expect(() => service.decrypt('dado-invalido-sem-separadores')).toThrow(
+            'Formato de dado criptografado inválido.',
+        );
     });
 
     it('deve lançar erro ao construir com chave de tamanho errado', async () => {

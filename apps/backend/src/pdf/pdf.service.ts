@@ -30,7 +30,7 @@ export class PdfService {
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, {
-            waitUntil: 'networkidle0',
+            waitUntil: 'load',
         });
 
         const pdfBuffer = await page.pdf({

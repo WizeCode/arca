@@ -6,7 +6,7 @@ import type { TokenDto } from '../dto/token.dto';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-    constructor(private reflector: Reflector) { }
+    constructor(private reflector: Reflector) {}
 
     canActivate(context: ExecutionContext): boolean {
         const requiredRoles = this.reflector.getAllAndOverride<RoleAccess[]>(ROLES_KEY, [

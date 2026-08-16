@@ -1,1 +1,1 @@
-export class Session { }
+export class Session {}

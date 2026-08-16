@@ -10,4 +10,4 @@ import { CryptoModule } from 'src/crypto/crypto.module';
     controllers: [MedicalRecordController],
     providers: [MedicalRecordService],
 })
-export class MedicalRecordModule { }
+export class MedicalRecordModule {}

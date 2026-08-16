@@ -37,7 +37,12 @@ async function main() {
     const existingGeneros = await prisma.genero.count();
     if (existingGeneros === 0) {
         await prisma.genero.createMany({
-            data: [{ nome: 'Masculino' }, { nome: 'Feminino' }, { nome: 'Não-binário' }, { nome: 'Prefiro não informar' }],
+            data: [
+                { nome: 'Masculino' },
+                { nome: 'Feminino' },
+                { nome: 'Não-binário' },
+                { nome: 'Prefiro não informar' },
+            ],
         });
         console.log('✅ Gêneros inseridos com sucesso!');
     } else {

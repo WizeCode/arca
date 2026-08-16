@@ -50,6 +50,9 @@ describe('Auth (e2e)', () => {
             .send({ email: 'admin@arca.com', password: 'Admin123!' })
             .expect(200);
 
-        await request(app.getHttpServer()).get('/users').set('Authorization', `Bearer ${loginRes.body.token}`).expect(200);
+        await request(app.getHttpServer())
+            .get('/users')
+            .set('Authorization', `Bearer ${loginRes.body.token}`)
+            .expect(200);
     });
 });

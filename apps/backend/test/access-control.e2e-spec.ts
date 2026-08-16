@@ -46,23 +46,22 @@ describe('Access Control (e2e)', () => {
         ).body.token;
 
         estagiario2 = (
-            await request(server)
-                .post('/users')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ nome: 'Estagiario 2 E2E', email: 'estagiario2@e2e.com', senha: 'Est2E2E123!', roleId: RoleAccess.ESTAGIARIO })
+            await request(server).post('/users').set('Authorization', `Bearer ${adminToken}`).send({
+                nome: 'Estagiario 2 E2E',
+                email: 'estagiario2@e2e.com',
+                senha: 'Est2E2E123!',
+                roleId: RoleAccess.ESTAGIARIO,
+            })
         ).body;
 
         supervisor2 = (
-            await request(server)
-                .post('/users')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    nome: 'Supervisor 2 E2E',
-                    email: 'supervisor2@e2e.com',
-                    senha: 'Sup2E2E123!',
-                    roleId: RoleAccess.SUPERVISOR,
-                    crp: '06/99999',
-                })
+            await request(server).post('/users').set('Authorization', `Bearer ${adminToken}`).send({
+                nome: 'Supervisor 2 E2E',
+                email: 'supervisor2@e2e.com',
+                senha: 'Sup2E2E123!',
+                roleId: RoleAccess.SUPERVISOR,
+                crp: '06/99999',
+            })
         ).body;
 
         estagiario1 = await prisma.usuario.findFirstOrThrow({ where: { email: 'estagiario@arca.com' } });

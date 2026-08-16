@@ -184,7 +184,9 @@ describe('UserService', () => {
                     access: RoleAccess.ADMIN,
                 } as TokenDto;
 
-                const users = [{ id_User: 'uuid-1', nome: 'pedro', email: 'pedro@test.com', roleId: RoleAccess.ESTAGIARIO }];
+                const users = [
+                    { id_User: 'uuid-1', nome: 'pedro', email: 'pedro@test.com', roleId: RoleAccess.ESTAGIARIO },
+                ];
 
                 mockPrisma.usuario.findMany.mockResolvedValue(users);
                 mockPrisma.usuario.count.mockResolvedValue(1);
@@ -203,7 +205,12 @@ describe('UserService', () => {
                 } as TokenDto;
                 const id_choosed = randomUUID();
 
-                const user = { id_User: id_choosed, nome: 'pedro', email: 'pedro@test.com', roleId: RoleAccess.ESTAGIARIO };
+                const user = {
+                    id_User: id_choosed,
+                    nome: 'pedro',
+                    email: 'pedro@test.com',
+                    roleId: RoleAccess.ESTAGIARIO,
+                };
 
                 mockPrisma.usuario.findFirst.mockResolvedValue(user);
                 const result = await service.findOne(id_choosed, creator);
@@ -259,7 +266,9 @@ describe('UserService', () => {
                 };
 
                 mockPrisma.usuario.findUnique.mockResolvedValue(undefined);
-                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(NotFoundException);
+                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(
+                    NotFoundException,
+                );
             });
 
             it('should throw ForbiddenException when a user (supervisor or intern) try to update another with grater role than his and different account than theirs', async () => {
@@ -280,7 +289,9 @@ describe('UserService', () => {
                 };
 
                 mockPrisma.usuario.findUnique.mockResolvedValue(user);
-                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(ForbiddenException);
+                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(
+                    ForbiddenException,
+                );
             });
 
             it('should throw BadRequestException when a user try to update but already has an existing email', async () => {
@@ -310,7 +321,9 @@ describe('UserService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValue(user);
                 mockPrisma.usuario.findFirst.mockResolvedValue(userFinded);
 
-                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(BadRequestException);
+                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw ConflictException when a user try to update another but already has an existing email and creator can reactive', async () => {
@@ -340,7 +353,9 @@ describe('UserService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValue(user);
                 mockPrisma.usuario.findFirst.mockResolvedValue(userFinded);
 
-                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(ConflictException);
+                await expect(service.update('uuid-1' as UUID, dataToUpdate, creator)).rejects.toThrow(
+                    ConflictException,
+                );
             });
         });
 

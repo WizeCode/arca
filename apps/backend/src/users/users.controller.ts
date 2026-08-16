@@ -31,7 +31,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-    constructor(private readonly usersService: UsersService) { }
+    constructor(private readonly usersService: UsersService) {}
 
     @ApiOperation({ summary: 'Criar novo usuário' })
     @ApiResponse({ status: 201, description: 'Usuário criado com sucesso.' })

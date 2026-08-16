@@ -5,7 +5,10 @@ import { ConteudoEvolucaoDto } from './conteudo-evolucao.dto';
 import { UUID } from 'node:crypto';
 
 export class CreateEvolucaoProntuarioDto {
-    @ApiProperty({ example: 'uuid-do-atendimento', description: 'UUID do atendimento de psicoterapia ao qual o prontuário pertence' })
+    @ApiProperty({
+        example: 'uuid-do-atendimento',
+        description: 'UUID do atendimento de psicoterapia ao qual o prontuário pertence',
+    })
     @IsNotEmpty({ message: 'O ID da sessão é obrigatório.' })
     @IsUUID()
     id_Sessao: UUID;

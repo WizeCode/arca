@@ -16,7 +16,7 @@ import { paginate, PaginationDto } from 'src/common/dto/pagination.dto';
 export class WaitlistService {
     private readonly logger = new Logger(WaitlistService.name);
 
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {}
 
     async create(body: CreateWaitlistDto) {
         const existingActiveEntry = await this.prisma.listaEspera.findFirst({
@@ -34,7 +34,9 @@ export class WaitlistService {
         });
 
         if (existingActiveEntry)
-            throw new BadRequestException('Já existe uma entrada ativa na lista de espera com este CPF. Contate a equipe');
+            throw new BadRequestException(
+                'Já existe uma entrada ativa na lista de espera com este CPF. Contate a equipe',
+            );
 
         const newWaitlistEntry = await this.prisma.listaEspera.create({
             data: {
@@ -98,7 +100,7 @@ export class WaitlistService {
         return {
             ...waitlistEntry,
             posicaoNaLista: posicao,
-            situacao: (waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
+            situacao: waitlistEntry.id_Status === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
         };
     }
 
@@ -128,7 +130,7 @@ export class WaitlistService {
         return {
             ...waitlistEntry,
             posicaoNaLista: posicaoNaLista + 1,
-            situacao: (waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
+            situacao: waitlistEntry.id_Status === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
         };
     }
 
@@ -210,25 +212,27 @@ export class WaitlistService {
         if (!waitlistEntry) {
             throw new NotFoundException('Paciente não encontrado na lista de espera.');
         }
-        if ((waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.DESATIVADO) {
+        if (waitlistEntry.id_Status === StatusListaEspera.DESATIVADO) {
             throw new BadRequestException('Paciente já está desativado na lista de espera.');
         }
         if (
-            (waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.RECEBEU_ALTA ||
-            (waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.ENCAMINHADO
+            waitlistEntry.id_Status === StatusListaEspera.RECEBEU_ALTA ||
+            waitlistEntry.id_Status === StatusListaEspera.ENCAMINHADO
         ) {
-            throw new BadRequestException('Não é possível desativar um paciente que já recebeu alta ou foi encaminhado.');
+            throw new BadRequestException(
+                'Não é possível desativar um paciente que já recebeu alta ou foi encaminhado.',
+            );
         }
-        if ((waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.EM_PSICOTERAPIA) {
+        if (waitlistEntry.id_Status === StatusListaEspera.EM_PSICOTERAPIA) {
             throw new BadRequestException('Não é possível desativar um paciente que está em psicoterapia.');
         }
-        if ((waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.TRIAGEM_APROVADA) {
+        if (waitlistEntry.id_Status === StatusListaEspera.TRIAGEM_APROVADA) {
             throw new BadRequestException('Não é possível desativar um paciente com triagem aprovada');
         }
-        if ((waitlistEntry.id_Status as StatusListaEspera) === StatusListaEspera.EM_TRIAGEM) {
+        if (waitlistEntry.id_Status === StatusListaEspera.EM_TRIAGEM) {
             throw new BadRequestException('Não é possível desativar um paciente que está em triagem.');
         }
-        if ((waitlistEntry.id_Status as StatusListaEspera) !== StatusListaEspera.EM_ESPERA) {
+        if (waitlistEntry.id_Status !== StatusListaEspera.EM_ESPERA) {
             throw new BadRequestException('Apenas pacientes com status "Em espera" podem ser desativados.');
         }
 
