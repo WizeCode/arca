@@ -86,11 +86,11 @@ describe('MedicalRecordService', () => {
     let service: MedicalRecordService;
 
     beforeEach(() => {
-        jest.spyOn(Logger.prototype, 'error').mockImplementation(() => { });
+        jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
         jest.clearAllMocks();
         mockCryptoService.encrypt.mockReturnValue('encrypted-content');
         mockCryptoService.decryptConteudo.mockImplementation((c: unknown) => c);
-        service = new MedicalRecordService(mockPrisma as any, mockPdfService as any, mockCryptoService as any);
+        service = new MedicalRecordService(mockPrisma as any, mockPdfService, mockCryptoService as any);
     });
 
     it('should be defined', () => {
@@ -105,7 +105,9 @@ describe('MedicalRecordService', () => {
                 it('should throw NotFoundException when atendimento does not exist', async () => {
                     mockPrisma.atendimento.findFirst.mockResolvedValue(null);
 
-                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(NotFoundException);
+                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        NotFoundException,
+                    );
                 });
 
                 it('should throw BadRequestException when atendimento is not triagem type', async () => {
@@ -113,7 +115,9 @@ describe('MedicalRecordService', () => {
                         makeAtendimento({ id_Tipo_Atendimento: TipoAtendimento.PSICOTERAPIA }),
                     );
 
-                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw BadRequestException when atendimento is not active', async () => {
@@ -121,7 +125,9 @@ describe('MedicalRecordService', () => {
                         makeAtendimento({ id_Status: StatusAtendimento.CONCLUIDO }),
                     );
 
-                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw BadRequestException when patient is not in triagem status', async () => {
@@ -129,7 +135,9 @@ describe('MedicalRecordService', () => {
                         makeAtendimento({ ListaEspera: { id_Status: StatusListaEspera.EM_ESPERA } }),
                     );
 
-                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw InternalServerErrorException when atendimento has no estagiario or supervisor', async () => {
@@ -184,7 +192,9 @@ describe('MedicalRecordService', () => {
                 it('should throw NotFoundException when atendimento does not exist', async () => {
                     mockPrisma.atendimento.findFirst.mockResolvedValue(null);
 
-                    await expect(service.createEvolucao(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(NotFoundException);
+                    await expect(service.createEvolucao(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        NotFoundException,
+                    );
                 });
 
                 it('should throw BadRequestException when atendimento is not psicoterapia type', async () => {
@@ -195,7 +205,9 @@ describe('MedicalRecordService', () => {
                         }),
                     );
 
-                    await expect(service.createEvolucao(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.createEvolucao(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw BadRequestException when patient does not have approved triagem', async () => {
@@ -206,7 +218,9 @@ describe('MedicalRecordService', () => {
                         }),
                     );
 
-                    await expect(service.createEvolucao(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.createEvolucao(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should create evolucao and return the prontuario', async () => {
@@ -321,19 +335,29 @@ describe('MedicalRecordService', () => {
                 it('should throw NotFoundException when prontuario does not exist', async () => {
                     mockPrisma.prontuario.findUnique.mockResolvedValue(null);
 
-                    await expect(service.putTriagem(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(NotFoundException);
+                    await expect(service.putTriagem(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        NotFoundException,
+                    );
                 });
 
                 it('should throw BadRequestException when prontuario is not triagem type', async () => {
-                    mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                    mockPrisma.prontuario.findUnique.mockResolvedValue(
+                        makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                    );
 
-                    await expect(service.putTriagem(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.putTriagem(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw BadRequestException when triagem is already approved', async () => {
-                    mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Status: StatusProntuario.APROVADO }));
+                    mockPrisma.prontuario.findUnique.mockResolvedValue(
+                        makeProntuario({ id_Status: StatusProntuario.APROVADO }),
+                    );
 
-                    await expect(service.putTriagem(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.putTriagem(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw ForbiddenException when supervisor is not responsible', async () => {
@@ -369,13 +393,19 @@ describe('MedicalRecordService', () => {
                 it('should throw NotFoundException when prontuario does not exist', async () => {
                     mockPrisma.prontuario.findUnique.mockResolvedValue(null);
 
-                    await expect(service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(NotFoundException);
+                    await expect(service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        NotFoundException,
+                    );
                 });
 
                 it('should throw BadRequestException when prontuario is not psicoterapia type', async () => {
-                    mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.TRIAGEM }));
+                    mockPrisma.prontuario.findUnique.mockResolvedValue(
+                        makeProntuario({ id_Tipo: TipoProntuario.TRIAGEM }),
+                    );
 
-                    await expect(service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should throw BadRequestException when evolucao is already approved', async () => {
@@ -383,12 +413,16 @@ describe('MedicalRecordService', () => {
                         makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA, id_Status: StatusProntuario.APROVADO }),
                     );
 
-                    await expect(service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(BadRequestException);
+                    await expect(service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
 
                 it('should update and return the evolucao', async () => {
                     const updated = makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA });
-                    mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                    mockPrisma.prontuario.findUnique.mockResolvedValue(
+                        makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                    );
                     mockPrisma.prontuario.update.mockResolvedValue(updated);
 
                     const result = await service.putEvolucao(id, dto, makeUser(RoleAccess.ADMIN));
@@ -474,7 +508,9 @@ describe('MedicalRecordService', () => {
             });
 
             it('should throw ForbiddenException when supervisor is not responsible', async () => {
-                mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                mockPrisma.prontuario.findUnique.mockResolvedValue(
+                    makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                );
 
                 await expect(
                     service.approveEvolucao(
@@ -486,7 +522,9 @@ describe('MedicalRecordService', () => {
             });
 
             it('should approve evolucao without alta or encaminhamento', async () => {
-                mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                mockPrisma.prontuario.findUnique.mockResolvedValue(
+                    makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                );
                 mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.approveEvolucao(
@@ -499,7 +537,9 @@ describe('MedicalRecordService', () => {
             });
 
             it('should approve evolucao with alta', async () => {
-                mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                mockPrisma.prontuario.findUnique.mockResolvedValue(
+                    makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                );
                 mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.approveEvolucao(
@@ -512,7 +552,9 @@ describe('MedicalRecordService', () => {
             });
 
             it('should approve evolucao with encaminhamento', async () => {
-                mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                mockPrisma.prontuario.findUnique.mockResolvedValue(
+                    makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                );
                 mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.approveEvolucao(
@@ -530,7 +572,9 @@ describe('MedicalRecordService', () => {
             });
 
             it('should approve evolucao with both alta and encaminhamento', async () => {
-                mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }));
+                mockPrisma.prontuario.findUnique.mockResolvedValue(
+                    makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
+                );
                 mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.approveEvolucao(

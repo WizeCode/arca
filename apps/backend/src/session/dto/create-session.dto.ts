@@ -34,7 +34,10 @@ export class CreateSessionDto {
     @IsNotEmpty()
     id_Tipo_Atendimento: number;
 
-    @ApiPropertyOptional({ example: 'Paciente solicitou horário vespertino.', description: 'Observações sobre o agendamento' })
+    @ApiPropertyOptional({
+        example: 'Paciente solicitou horário vespertino.',
+        description: 'Observações sobre o agendamento',
+    })
     @IsString()
     @IsOptional()
     observacoes?: string;

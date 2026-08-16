@@ -117,7 +117,9 @@ describe('SessionService', () => {
                     };
 
                     mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
-                    await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                    await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
             });
 
@@ -175,7 +177,9 @@ describe('SessionService', () => {
                     };
 
                     mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
-                    await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                    await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                        BadRequestException,
+                    );
                 });
             });
 
@@ -191,7 +195,9 @@ describe('SessionService', () => {
 
                 mockPrisma.listaEspera.findUnique.mockResolvedValue(undefined);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when patient is with final status', async () => {
@@ -211,7 +217,9 @@ describe('SessionService', () => {
 
                 mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when session type is wrong', async () => {
@@ -231,7 +239,9 @@ describe('SessionService', () => {
 
                 mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when intern is not found', async () => {
@@ -252,7 +262,9 @@ describe('SessionService', () => {
                 mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(undefined);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when supervisor is not found', async () => {
@@ -279,7 +291,9 @@ describe('SessionService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(undefined);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when intern already has a session at the same time (overlap)', async () => {
@@ -312,7 +326,9 @@ describe('SessionService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
                 mockPrisma.atendimento.findFirst.mockResolvedValue({ id_Atendimento: 'uuid-conflict' });
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when start date is beyond the final date', async () => {
@@ -344,7 +360,9 @@ describe('SessionService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when date is from the past', async () => {
@@ -376,7 +394,9 @@ describe('SessionService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when intern is not active', async () => {
@@ -402,7 +422,9 @@ describe('SessionService', () => {
                 mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when intern is not with intern role', async () => {
@@ -428,7 +450,9 @@ describe('SessionService', () => {
                 mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when supervisor is not active', async () => {
@@ -460,7 +484,9 @@ describe('SessionService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
 
             it('should throw BadRequestException when supervisor is not with supervisor role', async () => {
@@ -492,7 +518,9 @@ describe('SessionService', () => {
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                 mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
 
-                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(BadRequestException);
+                await expect(service.create(sessionToBeCreated as CreateSessionDto)).rejects.toThrow(
+                    BadRequestException,
+                );
             });
         });
 
@@ -508,7 +536,9 @@ describe('SessionService', () => {
 
                     const result = await service.findAll(user, pagination);
 
-                    expect(mockPrisma.atendimento.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+                    expect(mockPrisma.atendimento.findMany).toHaveBeenCalledWith(
+                        expect.objectContaining({ where: {} }),
+                    );
                     expect(result).toEqual({
                         data: sessions,
                         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },

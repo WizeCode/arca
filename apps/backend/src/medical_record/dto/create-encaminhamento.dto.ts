@@ -7,14 +7,20 @@ export class CreateEncaminhamentoDto {
     @IsBoolean()
     encaminhado: boolean;
 
-    @ApiPropertyOptional({ example: 'CAPS - Centro de Atenção Psicossocial', description: 'Instituição para a qual o paciente foi encaminhado (obrigatório se encaminhado=true)' })
+    @ApiPropertyOptional({
+        example: 'CAPS - Centro de Atenção Psicossocial',
+        description: 'Instituição para a qual o paciente foi encaminhado (obrigatório se encaminhado=true)',
+    })
     @IsOptional()
     @IsString({
         message: 'O campo instituicaoEncaminhada deve ser um texto.',
     })
     instituicaoEncaminhada?: string;
 
-    @ApiPropertyOptional({ example: 'Necessidade de acompanhamento psiquiátrico.', description: 'Motivo do encaminhamento externo' })
+    @ApiPropertyOptional({
+        example: 'Necessidade de acompanhamento psiquiátrico.',
+        description: 'Motivo do encaminhamento externo',
+    })
     @IsOptional()
     @IsString({
         message: 'O campo motivoEncaminhamento deve ser um texto.',

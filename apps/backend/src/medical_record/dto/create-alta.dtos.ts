@@ -8,7 +8,10 @@ export class CreateAltaDto extends CreateEncaminhamentoDto {
     @IsBoolean()
     recebeuAlta: boolean;
 
-    @ApiPropertyOptional({ example: 'Alta terapêutica por objetivos atingidos.', description: 'Finalidade ou descrição da alta' })
+    @ApiPropertyOptional({
+        example: 'Alta terapêutica por objetivos atingidos.',
+        description: 'Finalidade ou descrição da alta',
+    })
     @IsOptional()
     @IsString({
         message: 'O campo instituicaoEncaminhada deve ser um texto.',

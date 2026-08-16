@@ -22,11 +22,14 @@ import { Response } from 'express';
 @Controller('medical-record')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MedicalRecordController {
-    constructor(private readonly medicalRecordService: MedicalRecordService) { }
+    constructor(private readonly medicalRecordService: MedicalRecordService) {}
 
     @ApiOperation({ summary: 'Criar prontuário de triagem (Coordenador/Supervisor/Estagiário)' })
     @ApiResponse({ status: 201, description: 'Prontuário de triagem criado.' })
-    @ApiResponse({ status: 400, description: 'Atendimento não é do tipo triagem, já concluído ou paciente sem status correto.' })
+    @ApiResponse({
+        status: 400,
+        description: 'Atendimento não é do tipo triagem, já concluído ou paciente sem status correto.',
+    })
     @ApiResponse({ status: 401, description: 'Não autenticado.' })
     @ApiResponse({ status: 403, description: 'Usuário não é o responsável pelo atendimento.' })
     @ApiResponse({ status: 404, description: 'Atendimento não encontrado.' })
@@ -53,7 +56,10 @@ export class MedicalRecordController {
     }
 
     @ApiOperation({ summary: 'Aprovar prontuário de triagem e decidir encaminhamento (Coordenador/Supervisor)' })
-    @ApiResponse({ status: 200, description: 'Triagem aprovada. Paciente encaminhado para psicoterapia ou serviço externo.' })
+    @ApiResponse({
+        status: 200,
+        description: 'Triagem aprovada. Paciente encaminhado para psicoterapia ou serviço externo.',
+    })
     @ApiResponse({ status: 400, description: 'Prontuário já aprovado, ou encaminhado=true sem instituição informada.' })
     @ApiResponse({ status: 401, description: 'Não autenticado.' })
     @ApiResponse({ status: 403, description: 'Somente o supervisor responsável pode aprovar.' })
@@ -70,7 +76,10 @@ export class MedicalRecordController {
 
     @ApiOperation({ summary: 'Criar prontuário de evolução de psicoterapia (Coordenador/Supervisor/Estagiário)' })
     @ApiResponse({ status: 201, description: 'Prontuário de evolução criado.' })
-    @ApiResponse({ status: 400, description: 'Atendimento não é do tipo psicoterapia, já concluído ou paciente sem status correto.' })
+    @ApiResponse({
+        status: 400,
+        description: 'Atendimento não é do tipo psicoterapia, já concluído ou paciente sem status correto.',
+    })
     @ApiResponse({ status: 401, description: 'Não autenticado.' })
     @ApiResponse({ status: 403, description: 'Usuário não é o responsável pelo atendimento.' })
     @ApiResponse({ status: 404, description: 'Atendimento não encontrado.' })
@@ -137,7 +146,11 @@ export class MedicalRecordController {
     @ApiResponse({ status: 401, description: 'Não autenticado.' })
     @ApiResponse({ status: 404, description: 'Prontuário de encaminhamento não encontrado.' })
     @Get('prontuarios/encaminhamento/pdf/:id')
-    generateEncaminhamentoPdf(@Param('id', ParseUUIDPipe) id: UUID, @CurrentUser() user: TokenDto, @Res() res: Response) {
+    generateEncaminhamentoPdf(
+        @Param('id', ParseUUIDPipe) id: UUID,
+        @CurrentUser() user: TokenDto,
+        @Res() res: Response,
+    ) {
         return this.medicalRecordService.generateEncaminhamentoPdf(id, user, res);
     }
 

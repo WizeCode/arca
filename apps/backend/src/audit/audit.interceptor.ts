@@ -9,7 +9,7 @@ import type { TokenDto } from 'src/common/dto/token.dto';
 export class AuditInterceptor implements NestInterceptor {
     private readonly logger = new Logger(AuditInterceptor.name);
 
-    constructor(private readonly auditService: AuditService) { }
+    constructor(private readonly auditService: AuditService) {}
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
         const request = context.switchToHttp().getRequest<{
@@ -29,7 +29,10 @@ export class AuditInterceptor implements NestInterceptor {
         return next.handle().pipe(
             tap((data) => {
                 this.logAudit(context, request, data).catch((error: unknown) =>
-                    this.logger.error('Falha ao salvar o log de auditoria', error instanceof Error ? error.stack : error),
+                    this.logger.error(
+                        'Falha ao salvar o log de auditoria',
+                        error instanceof Error ? error.stack : error,
+                    ),
                 );
             }),
         );

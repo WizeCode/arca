@@ -17,11 +17,15 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 @Controller('session')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SessionController {
-    constructor(private readonly sessionService: SessionService) { }
+    constructor(private readonly sessionService: SessionService) {}
 
     @ApiOperation({ summary: 'Agendar novo atendimento (Coordenador/Secretário)' })
     @ApiResponse({ status: 201, description: 'Atendimento agendado com sucesso.' })
-    @ApiResponse({ status: 400, description: 'Dados inválidos: paciente sem status correto, conflito de horário, papéis inválidos ou datas incorretas.' })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Dados inválidos: paciente sem status correto, conflito de horário, papéis inválidos ou datas incorretas.',
+    })
     @ApiResponse({ status: 401, description: 'Não autenticado.' })
     @ApiResponse({ status: 403, description: 'Acesso negado. Somente Coordenadores e Secretários.' })
     @ApiResponse({ status: 404, description: 'Paciente, estagiário ou supervisor não encontrado.' })

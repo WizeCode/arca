@@ -9,4 +9,4 @@ import { HashingModule } from 'src/auth/hash/hashing.module';
     controllers: [UsersController],
     providers: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

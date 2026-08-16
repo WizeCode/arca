@@ -16,7 +16,7 @@ export interface CreateAuditLogDto {
 
 @Injectable()
 export class AuditService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(logData: CreateAuditLogDto) {
         return await this.prisma.logAuditoria.create({

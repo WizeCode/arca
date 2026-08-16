@@ -11,7 +11,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 @ApiTags('Lista de Espera')
 @Controller('waitlist')
 export class WaitlistController {
-    constructor(private readonly waitlistService: WaitlistService) { }
+    constructor(private readonly waitlistService: WaitlistService) {}
 
     @ApiOperation({ summary: 'Cadastro público de paciente na lista de espera' })
     @ApiResponse({ status: 201, description: 'Paciente cadastrado. Retorna UUID para consulta de posição.' })

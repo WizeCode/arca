@@ -20,20 +20,14 @@ export class UsersService {
     constructor(
         private prisma: PrismaService,
         private HashingService: HashingServiceProtocol,
-    ) { }
+    ) {}
 
     private canActOnUser(actorAccess: number, targetRoleId: number): boolean {
-        return (
-            actorAccess < targetRoleId ||
-            ((actorAccess as RoleAccess) === RoleAccess.ADMIN && (targetRoleId as RoleAccess) === RoleAccess.ADMIN)
-        );
+        return actorAccess < targetRoleId || (actorAccess === RoleAccess.ADMIN && targetRoleId === RoleAccess.ADMIN);
     }
 
     async create(createUserDto: CreateUserDto, creator: TokenDto) {
-        if (
-            (createUserDto.roleId as RoleAccess) <= creator.access &&
-            !this.canActOnUser(creator.access, createUserDto.roleId)
-        ) {
+        if (createUserDto.roleId <= creator.access && !this.canActOnUser(creator.access, createUserDto.roleId)) {
             throw new ForbiddenException(
                 'Você não tem permissão para criar um usuário com nível de acesso igual ou superior ao seu.',
             );
@@ -51,8 +45,8 @@ export class UsersService {
             }
 
             const canReactivate =
-                creator.access < (existingUser.roleId as RoleAccess) ||
-                (creator.access === RoleAccess.ADMIN && (existingUser.roleId as RoleAccess) === RoleAccess.ADMIN);
+                creator.access < existingUser.roleId ||
+                (creator.access === RoleAccess.ADMIN && existingUser.roleId === RoleAccess.ADMIN);
 
             if (canReactivate) {
                 throw new ConflictException({
@@ -65,7 +59,7 @@ export class UsersService {
             }
         }
 
-        if ((createUserDto.roleId as RoleAccess) === RoleAccess.SUPERVISOR) {
+        if (createUserDto.roleId === RoleAccess.SUPERVISOR) {
             if (!createUserDto.crp) {
                 throw new BadRequestException('CRP é obrigatório para psicólogos supervisores.');
             }
@@ -193,7 +187,7 @@ export class UsersService {
         };
 
         if (updateUserDto.crp !== undefined) {
-            if ((user.roleId as RoleAccess) !== RoleAccess.SUPERVISOR) {
+            if (user.roleId !== RoleAccess.SUPERVISOR) {
                 throw new BadRequestException(
                     'O campo CRP (Conselho Regional de Psicologia) só pode ser definido para usuários do tipo Supervisor.',
                 );
@@ -257,7 +251,7 @@ export class UsersService {
             throw new BadRequestException('Este usuário já está ativo.');
         }
 
-        if (creator.access >= (user.roleId as RoleAccess) && creator.access !== RoleAccess.ADMIN) {
+        if (creator.access >= user.roleId && creator.access !== RoleAccess.ADMIN) {
             throw new ForbiddenException('Você não tem permissão para reativar um usuário deste nível de acesso.');
         }
 

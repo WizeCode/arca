@@ -80,7 +80,7 @@ export class SessionService {
     constructor(
         private prisma: PrismaService,
         private cryptoService: CryptoService,
-    ) { }
+    ) {}
 
     /**
      * Descriptografa o conteudo de um prontuário.
@@ -110,35 +110,41 @@ export class SessionService {
             throw new BadRequestException('Paciente não encontrado.');
         }
 
-        const statusFinais = [StatusListaEspera.RECEBEU_ALTA, StatusListaEspera.ENCAMINHADO, StatusListaEspera.DESATIVADO];
+        const statusFinais = [
+            StatusListaEspera.RECEBEU_ALTA,
+            StatusListaEspera.ENCAMINHADO,
+            StatusListaEspera.DESATIVADO,
+        ];
         if (statusFinais.includes(paciente.id_Status)) {
             throw new BadRequestException('Paciente está com um status final e não pode ter novas sessões agendadas.');
         }
 
         if (
-            (session.id_Tipo_Atendimento as TipoAtendimento) !== TipoAtendimento.TRIAGEM &&
-            (session.id_Tipo_Atendimento as TipoAtendimento) !== TipoAtendimento.PSICOTERAPIA
+            session.id_Tipo_Atendimento !== TipoAtendimento.TRIAGEM &&
+            session.id_Tipo_Atendimento !== TipoAtendimento.PSICOTERAPIA
         ) {
             throw new BadRequestException('Tipo de atendimento inválido.');
         }
 
-        if ((session.id_Tipo_Atendimento as TipoAtendimento) === TipoAtendimento.TRIAGEM) {
+        if (session.id_Tipo_Atendimento === TipoAtendimento.TRIAGEM) {
             // 1 = Triagem
-            if ((paciente.id_Status as StatusListaEspera) !== StatusListaEspera.EM_ESPERA) {
-                throw new BadRequestException('Este paciente não está "Em Espera". Não é possível agendar uma nova triagem.');
+            if (paciente.id_Status !== StatusListaEspera.EM_ESPERA) {
+                throw new BadRequestException(
+                    'Este paciente não está "Em Espera". Não é possível agendar uma nova triagem.',
+                );
             }
-        } else if ((session.id_Tipo_Atendimento as TipoAtendimento) === TipoAtendimento.PSICOTERAPIA) {
+        } else if (session.id_Tipo_Atendimento === TipoAtendimento.PSICOTERAPIA) {
             // 2 = Psicoterapia
 
             const statusPermitidos = [StatusListaEspera.TRIAGEM_APROVADA, StatusListaEspera.EM_PSICOTERAPIA];
 
-            if (!statusPermitidos.includes(paciente.id_Status as StatusListaEspera)) {
-                if ((paciente.id_Status as StatusListaEspera) === StatusListaEspera.EM_ESPERA) {
+            if (!statusPermitidos.includes(paciente.id_Status)) {
+                if (paciente.id_Status === StatusListaEspera.EM_ESPERA) {
                     throw new BadRequestException(
                         'Paciente precisa passar pela triagem antes de agendar uma sessão de psicoterapia.',
                     );
                 }
-                if ((paciente.id_Status as StatusListaEspera) === StatusListaEspera.EM_TRIAGEM) {
+                if (paciente.id_Status === StatusListaEspera.EM_TRIAGEM) {
                     throw new BadRequestException(
                         'Paciente está em triagem. A triagem precisa ser aprovada antes de agendar uma sessão de psicoterapia.',
                     );
@@ -154,7 +160,7 @@ export class SessionService {
 
         if (!estagiario) {
             throw new BadRequestException('Estagiário não encontrado.');
-        } else if ((estagiario.roleId as RoleAccess) !== RoleAccess.ESTAGIARIO) {
+        } else if (estagiario.roleId !== RoleAccess.ESTAGIARIO) {
             throw new BadRequestException('O usuário designado como estagiário não possui o papel de estagiário.');
         } else if (!estagiario.isActive) {
             throw new BadRequestException('O estagiário designado está desativado.');
@@ -165,7 +171,7 @@ export class SessionService {
         });
         if (!supervisor) {
             throw new BadRequestException('Supervisor não encontrado.');
-        } else if ((supervisor.roleId as RoleAccess) !== RoleAccess.SUPERVISOR) {
+        } else if (supervisor.roleId !== RoleAccess.SUPERVISOR) {
             throw new BadRequestException('O usuário designado como supervisor não possui o papel de supervisor.');
         } else if (!supervisor.isActive) {
             throw new BadRequestException('O supervisor designado está desativado.');
@@ -220,14 +226,14 @@ export class SessionService {
 
         let updateListaEsperaPromise: Prisma.PrismaPromise<unknown> | null = null;
 
-        if ((session.id_Tipo_Atendimento as TipoAtendimento) === TipoAtendimento.TRIAGEM) {
+        if (session.id_Tipo_Atendimento === TipoAtendimento.TRIAGEM) {
             updateListaEsperaPromise = this.prisma.listaEspera.update({
                 where: { id_Lista: session.id_Lista },
                 data: { id_Status: StatusListaEspera.EM_TRIAGEM },
             });
         } else if (
-            (session.id_Tipo_Atendimento as TipoAtendimento) === TipoAtendimento.PSICOTERAPIA &&
-            (paciente.id_Status as StatusListaEspera) === StatusListaEspera.TRIAGEM_APROVADA
+            session.id_Tipo_Atendimento === TipoAtendimento.PSICOTERAPIA &&
+            paciente.id_Status === StatusListaEspera.TRIAGEM_APROVADA
         ) {
             updateListaEsperaPromise = this.prisma.listaEspera.update({
                 where: { id_Lista: session.id_Lista },
@@ -417,18 +423,18 @@ export class SessionService {
             throw new NotFoundException('Sessão não encontrada.');
         }
 
-        if ((session.id_Status as StatusAtendimento) !== StatusAtendimento.ATIVO) {
+        if (session.id_Status !== StatusAtendimento.ATIVO) {
             throw new BadRequestException('Só é possível cancelar uma sessão que esteja agendada.');
         }
 
         let updateListaEsperaPromise: Prisma.PrismaPromise<unknown> | null = null;
-        if ((session.id_Tipo_Atendimento as TipoAtendimento) === TipoAtendimento.TRIAGEM) {
+        if (session.id_Tipo_Atendimento === TipoAtendimento.TRIAGEM) {
             // Se cancelou uma triagem, paciente volta para "Em espera"
             updateListaEsperaPromise = this.prisma.listaEspera.update({
                 where: { id_Lista: session.id_Lista },
                 data: { id_Status: StatusListaEspera.EM_ESPERA },
             });
-        } else if ((session.id_Tipo_Atendimento as TipoAtendimento) === TipoAtendimento.PSICOTERAPIA) {
+        } else if (session.id_Tipo_Atendimento === TipoAtendimento.PSICOTERAPIA) {
             const hasOtherPsicoterapia = await this.prisma.prontuario.findFirst({
                 where: {
                     atendimento: {

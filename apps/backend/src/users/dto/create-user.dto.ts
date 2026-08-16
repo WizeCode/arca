@@ -22,13 +22,19 @@ export class CreateUserDto {
     @MaxLength(255)
     senha: string;
 
-    @ApiProperty({ example: 4, description: 'ID do perfil de acesso: 1=Coordenador, 2=Secretário, 3=Supervisor, 4=Estagiário' })
+    @ApiProperty({
+        example: 4,
+        description: 'ID do perfil de acesso: 1=Coordenador, 2=Secretário, 3=Supervisor, 4=Estagiário',
+    })
     @IsInt()
     @Min(1)
     @Transform(({ value }: { value: string }) => parseInt(value))
     roleId: number;
 
-    @ApiPropertyOptional({ example: '06/12345', description: 'CRP do supervisor no formato XX/XXXXX ou XX/XXXXXX. Obrigatório quando roleId=3.' })
+    @ApiPropertyOptional({
+        example: '06/12345',
+        description: 'CRP do supervisor no formato XX/XXXXX ou XX/XXXXXX. Obrigatório quando roleId=3.',
+    })
     @IsOptional()
     @IsString({ message: 'O CRP deve ser um texto.' })
     @IsNotEmpty({ message: 'O campo CRP não pode ser vazio.' })

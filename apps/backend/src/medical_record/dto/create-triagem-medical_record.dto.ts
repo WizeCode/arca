@@ -5,7 +5,10 @@ import { ConteudoTriagemDto } from './conteudo-triagem.dto';
 import { UUID } from 'node:crypto';
 
 export class CreateTriagemProntuarioDto {
-    @ApiProperty({ example: 'uuid-do-atendimento', description: 'UUID do atendimento de triagem ao qual o prontuário pertence' })
+    @ApiProperty({
+        example: 'uuid-do-atendimento',
+        description: 'UUID do atendimento de triagem ao qual o prontuário pertence',
+    })
     @IsNotEmpty({ message: 'O ID da sessão é obrigatório.' })
     @IsUUID()
     id_Sessao: UUID;

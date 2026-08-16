@@ -11,4 +11,4 @@ import { BcryptService } from './bcrypt.service';
     ],
     exports: [HashingServiceProtocol],
 })
-export class HashingModule { }
+export class HashingModule {}

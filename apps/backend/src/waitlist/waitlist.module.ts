@@ -8,4 +8,4 @@ import { PrismaModule } from 'src/prisma/prisma.module';
     controllers: [WaitlistController],
     providers: [WaitlistService],
 })
-export class WaitlistModule { }
+export class WaitlistModule {}

@@ -12,7 +12,7 @@ import { AuditFilterDto } from './dto/audit-filter.dto';
 @Controller('audit')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AuditController {
-    constructor(private auditService: AuditService) { }
+    constructor(private auditService: AuditService) {}
 
     @ApiOperation({ summary: 'Listar logs de auditoria (somente Coordenador)' })
     @ApiResponse({ status: 200, description: 'Lista paginada de logs retornada com sucesso.' })

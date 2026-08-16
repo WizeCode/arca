@@ -8,4 +8,4 @@ export class UpdateSessionDto extends PartialType(
         'id_Supervisor_Executor',
         'id_Tipo_Atendimento',
     ] as const),
-) { }
+) {}
