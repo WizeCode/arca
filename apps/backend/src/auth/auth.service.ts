@@ -41,6 +41,7 @@ export class AuthService {
             nome: user.nome,
             email: user.email,
             roleId: user.roleId,
+            id_Clinica: user.id_Clinica,
         };
     }
 
@@ -51,6 +52,7 @@ export class AuthService {
                 name: user.nome,
                 email: user.email,
                 access: user.roleId,
+                clinicaId: user.id_Clinica,
             },
             {
                 secret: this.jwtConfiguration.secret,
@@ -60,12 +62,6 @@ export class AuthService {
             },
         );
 
-        return {
-            id: user.id_User,
-            name: user.nome,
-            email: user.email,
-            roleId: user.roleId,
-            token: token,
-        };
+        return { token };
     }
 }

@@ -3,4 +3,5 @@ export interface ValidatedUserDto {
     nome: string;
     email: string;
     roleId: number;
+    id_Clinica: string;
 }

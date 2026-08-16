@@ -18,6 +18,7 @@ describe('AuthService', () => {
         email: 'pedro@test.com',
         senhaHash: 'hash-qualquer',
         roleId: 4,
+        id_Clinica: 'uuid-clinica-123',
     };
 
     beforeEach(async () => {
@@ -67,6 +68,7 @@ describe('AuthService', () => {
                 nome: 'Pedro',
                 email: 'pedro@test.com',
                 roleId: 4,
+                id_Clinica: 'uuid-clinica-123',
             });
         });
 
@@ -100,10 +102,6 @@ describe('AuthService', () => {
 
             const result = await service.login(user);
             expect(result).toEqual({
-                id: user.id_User,
-                name: user.nome,
-                email: user.email,
-                roleId: user.roleId,
                 token: 'token-fake',
             });
         });
