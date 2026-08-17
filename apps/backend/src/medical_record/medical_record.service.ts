@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     ForbiddenException,
+    Inject,
     Injectable,
     InternalServerErrorException,
     Logger,
@@ -9,7 +10,7 @@ import {
 import { CreateTriagemProntuarioDto } from './dto/create-triagem-medical_record.dto';
 import { CreateEvolucaoProntuarioDto } from './dto/create-evolucao-medical_record.dto';
 import { TokenDto } from 'src/common/dto/token.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
 import { Prisma } from '@prisma/client';
 import { UUID } from 'node:crypto';
 import { ConteudoTriagemDto } from './dto/conteudo-triagem.dto';
@@ -40,7 +41,7 @@ export class MedicalRecordService {
     private readonly logger = new Logger(MedicalRecordService.name);
 
     constructor(
-        private prisma: PrismaService,
+        @Inject(TENANT_PRISMA) private prisma: TenantPrismaClient,
         private pdfService: PdfService,
         private cryptoService: CryptoService,
     ) {}
@@ -85,8 +86,12 @@ export class MedicalRecordService {
         }
 
         try {
-            const [relatorioTriagem] = await this.prisma.$transaction([
-                this.prisma.prontuario.create({
+            return await this.prisma.$tenantTransaction(async (tx) => {
+                // `as ...UncheckedCreateInput`: id_Clinica é obrigatório no tipo gerado pelo Prisma,
+                // mas Prisma.TransactionClient não conhece a extension — tenant.extension.ts
+                // carimba id_Clinica em runtime via $allOperations (coberto por
+                // tenant.extension.spec.ts). Não adicionar id_Clinica manualmente aqui.
+                const relatorioTriagem = await tx.prontuario.create({
                     data: {
                         id_Atendimento: createTriagemProntuarioDto.id_Sessao,
 
@@ -94,18 +99,18 @@ export class MedicalRecordService {
 
                         id_Status: StatusProntuario.EM_APROVACAO,
                         id_Tipo: TipoProntuario.TRIAGEM,
-                    },
-                }),
+                    } as Prisma.ProntuarioUncheckedCreateInput,
+                });
 
-                this.prisma.atendimento.update({
+                await tx.atendimento.update({
                     where: { id_Atendimento: createTriagemProntuarioDto.id_Sessao },
                     data: {
                         id_Status: StatusAtendimento.EM_ANDAMENTO,
                     },
-                }),
-            ]);
+                });
 
-            return relatorioTriagem;
+                return relatorioTriagem;
+            });
         } catch (error) {
             this.logger.error('Falha ao salvar triagem', error instanceof Error ? error.stack : error);
             throw new InternalServerErrorException(
@@ -173,26 +178,6 @@ export class MedicalRecordService {
         if (user.access === RoleAccess.SUPERVISOR && user.sub !== prontuario.atendimento.id_Supervisor_Executor)
             throw new ForbiddenException('Apenas o supervisor responsável pode aprovar esta triagem.');
 
-        const transactionPromises: Prisma.PrismaPromise<unknown>[] = [];
-
-        transactionPromises.push(
-            this.prisma.prontuario.update({
-                where: { id_Registro: id },
-                data: {
-                    id_Status: StatusProntuario.APROVADO,
-                },
-            }),
-        );
-
-        transactionPromises.push(
-            this.prisma.atendimento.update({
-                where: { id_Atendimento: prontuario.id_Atendimento },
-                data: {
-                    id_Status: StatusAtendimento.CONCLUIDO,
-                },
-            }),
-        );
-
         if (createEncaminhamentoDto.encaminhado) {
             const { instituicaoEncaminhada, motivoEncaminhamento } = createEncaminhamentoDto;
             if (!instituicaoEncaminhada || instituicaoEncaminhada.trim() === '') {
@@ -205,39 +190,51 @@ export class MedicalRecordService {
                     'O campo motivoEncaminhamento é obrigatório quando "encaminhado" é verdadeiro.',
                 );
             }
-
-            transactionPromises.push(
-                this.prisma.listaEspera.update({
-                    where: { id_Lista: prontuario.atendimento.id_Lista },
-                    data: {
-                        id_Status: StatusListaEspera.ENCAMINHADO,
-                    },
-                }),
-            );
-
-            transactionPromises.push(
-                this.prisma.prontuario.create({
-                    data: {
-                        id_Atendimento: prontuario.id_Atendimento,
-                        conteudo: this.encrypt({ instituicaoEncaminhada, motivoEncaminhamento }),
-                        id_Status: StatusProntuario.APROVADO,
-                        id_Tipo: TipoProntuario.ENCAMINHAMENTO,
-                    },
-                }),
-            );
-        } else {
-            transactionPromises.push(
-                this.prisma.listaEspera.update({
-                    where: { id_Lista: prontuario.atendimento.id_Lista },
-                    data: {
-                        id_Status: StatusListaEspera.TRIAGEM_APROVADA,
-                    },
-                }),
-            );
         }
 
         try {
-            await this.prisma.$transaction(transactionPromises);
+            await this.prisma.$tenantTransaction(async (tx) => {
+                await tx.prontuario.update({
+                    where: { id_Registro: id },
+                    data: {
+                        id_Status: StatusProntuario.APROVADO,
+                    },
+                });
+
+                await tx.atendimento.update({
+                    where: { id_Atendimento: prontuario.id_Atendimento },
+                    data: {
+                        id_Status: StatusAtendimento.CONCLUIDO,
+                    },
+                });
+
+                if (createEncaminhamentoDto.encaminhado) {
+                    const { instituicaoEncaminhada, motivoEncaminhamento } = createEncaminhamentoDto;
+
+                    await tx.listaEspera.update({
+                        where: { id_Lista: prontuario.atendimento.id_Lista },
+                        data: {
+                            id_Status: StatusListaEspera.ENCAMINHADO,
+                        },
+                    });
+
+                    await tx.prontuario.create({
+                        data: {
+                            id_Atendimento: prontuario.id_Atendimento,
+                            conteudo: this.encrypt({ instituicaoEncaminhada, motivoEncaminhamento }),
+                            id_Status: StatusProntuario.APROVADO,
+                            id_Tipo: TipoProntuario.ENCAMINHAMENTO,
+                        } as Prisma.ProntuarioUncheckedCreateInput,
+                    });
+                } else {
+                    await tx.listaEspera.update({
+                        where: { id_Lista: prontuario.atendimento.id_Lista },
+                        data: {
+                            id_Status: StatusListaEspera.TRIAGEM_APROVADA,
+                        },
+                    });
+                }
+            });
 
             return createEncaminhamentoDto.encaminhado
                 ? 'Paciente encaminhado com sucesso.'
@@ -282,8 +279,8 @@ export class MedicalRecordService {
         }
 
         try {
-            const [relatorioEvolucao] = await this.prisma.$transaction([
-                this.prisma.prontuario.create({
+            return await this.prisma.$tenantTransaction(async (tx) => {
+                const relatorioEvolucao = await tx.prontuario.create({
                     data: {
                         id_Atendimento: createEvolucaoProntuarioDto.id_Sessao,
 
@@ -291,18 +288,18 @@ export class MedicalRecordService {
 
                         id_Status: StatusProntuario.EM_APROVACAO,
                         id_Tipo: TipoProntuario.PSICOTERAPIA,
-                    },
-                }),
+                    } as Prisma.ProntuarioUncheckedCreateInput,
+                });
 
-                this.prisma.atendimento.update({
+                await tx.atendimento.update({
                     where: { id_Atendimento: createEvolucaoProntuarioDto.id_Sessao },
                     data: {
                         id_Status: StatusAtendimento.EM_ANDAMENTO,
                     },
-                }),
-            ]);
+                });
 
-            return relatorioEvolucao;
+                return relatorioEvolucao;
+            });
         } catch (error) {
             this.logger.error(
                 'Falha ao salvar relatório de psicoterapia',
@@ -375,54 +372,11 @@ export class MedicalRecordService {
         if (user.access === RoleAccess.SUPERVISOR && user.sub !== prontuario.atendimento.id_Supervisor_Executor)
             throw new ForbiddenException('Apenas o supervisor responsável pode aprovar este registro de psicoterapia.');
 
-        const transactionPromises: Prisma.PrismaPromise<unknown>[] = [];
-        let altaCriada = false;
-        let encaminhamentoCriado = false;
-
-        transactionPromises.push(
-            this.prisma.prontuario.update({
-                where: { id_Registro: id },
-                data: {
-                    id_Status: StatusProntuario.APROVADO,
-                },
-            }),
-        );
-
-        transactionPromises.push(
-            this.prisma.atendimento.update({
-                where: { id_Atendimento: prontuario.id_Atendimento },
-                data: {
-                    id_Status: StatusAtendimento.CONCLUIDO,
-                },
-            }),
-        );
-
         if (createAltaDto.recebeuAlta) {
             const { finalidade } = createAltaDto;
             if (!finalidade || finalidade.trim() === '') {
                 throw new BadRequestException('O campo finalidade é obrigatório quando "recebeuAlta" é verdadeiro.');
             }
-
-            transactionPromises.push(
-                this.prisma.prontuario.create({
-                    data: {
-                        id_Atendimento: prontuario.id_Atendimento,
-                        conteudo: this.encrypt({ finalidade }),
-                        id_Status: StatusProntuario.APROVADO,
-                        id_Tipo: TipoProntuario.ALTA,
-                    },
-                }),
-            );
-
-            altaCriada = true;
-            transactionPromises.push(
-                this.prisma.listaEspera.update({
-                    where: { id_Lista: prontuario.atendimento.id_Lista },
-                    data: {
-                        id_Status: StatusListaEspera.RECEBEU_ALTA,
-                    },
-                }),
-            );
         }
 
         if (createAltaDto.encaminhado) {
@@ -437,22 +391,60 @@ export class MedicalRecordService {
                     'O campo motivoEncaminhamento é obrigatório quando "encaminhado" é verdadeiro.',
                 );
             }
-
-            transactionPromises.push(
-                this.prisma.prontuario.create({
-                    data: {
-                        id_Atendimento: prontuario.id_Atendimento,
-                        conteudo: this.encrypt({ instituicaoEncaminhada, motivoEncaminhamento }),
-                        id_Status: StatusProntuario.APROVADO,
-                        id_Tipo: TipoProntuario.ENCAMINHAMENTO,
-                    },
-                }),
-            );
-            encaminhamentoCriado = true;
         }
 
+        const altaCriada = !!createAltaDto.recebeuAlta;
+        const encaminhamentoCriado = !!createAltaDto.encaminhado;
+
         try {
-            await this.prisma.$transaction(transactionPromises);
+            await this.prisma.$tenantTransaction(async (tx) => {
+                await tx.prontuario.update({
+                    where: { id_Registro: id },
+                    data: {
+                        id_Status: StatusProntuario.APROVADO,
+                    },
+                });
+
+                await tx.atendimento.update({
+                    where: { id_Atendimento: prontuario.id_Atendimento },
+                    data: {
+                        id_Status: StatusAtendimento.CONCLUIDO,
+                    },
+                });
+
+                if (altaCriada) {
+                    const { finalidade } = createAltaDto;
+
+                    await tx.prontuario.create({
+                        data: {
+                            id_Atendimento: prontuario.id_Atendimento,
+                            conteudo: this.encrypt({ finalidade }),
+                            id_Status: StatusProntuario.APROVADO,
+                            id_Tipo: TipoProntuario.ALTA,
+                        } as Prisma.ProntuarioUncheckedCreateInput,
+                    });
+
+                    await tx.listaEspera.update({
+                        where: { id_Lista: prontuario.atendimento.id_Lista },
+                        data: {
+                            id_Status: StatusListaEspera.RECEBEU_ALTA,
+                        },
+                    });
+                }
+
+                if (encaminhamentoCriado) {
+                    const { instituicaoEncaminhada, motivoEncaminhamento } = createAltaDto;
+
+                    await tx.prontuario.create({
+                        data: {
+                            id_Atendimento: prontuario.id_Atendimento,
+                            conteudo: this.encrypt({ instituicaoEncaminhada, motivoEncaminhamento }),
+                            id_Status: StatusProntuario.APROVADO,
+                            id_Tipo: TipoProntuario.ENCAMINHAMENTO,
+                        } as Prisma.ProntuarioUncheckedCreateInput,
+                    });
+                }
+            });
 
             if (altaCriada && encaminhamentoCriado) {
                 return 'Evolução aprovada. Alta e Encaminhamento gerados com sucesso.';

@@ -1,8 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { TokenDto } from 'src/common/dto/token.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
 import { Prisma } from '@prisma/client';
 import { UUID } from 'node:crypto';
 import { CryptoService } from 'src/crypto/crypto.service';
@@ -78,7 +78,7 @@ type SessionWithRelations = Prisma.AtendimentoGetPayload<{ include: typeof SESSI
 @Injectable()
 export class SessionService {
     constructor(
-        private prisma: PrismaService,
+        @Inject(TENANT_PRISMA) private prisma: TenantPrismaClient,
         private cryptoService: CryptoService,
     ) {}
 
@@ -224,26 +224,23 @@ export class SessionService {
             throw new BadRequestException('O estagiário já possui uma sessão agendada nesse horário.');
         }
 
-        let updateListaEsperaPromise: Prisma.PrismaPromise<unknown> | null = null;
-
+        let novoStatusListaEspera: StatusListaEspera | null = null;
         if (session.id_Tipo_Atendimento === TipoAtendimento.TRIAGEM) {
-            updateListaEsperaPromise = this.prisma.listaEspera.update({
-                where: { id_Lista: session.id_Lista },
-                data: { id_Status: StatusListaEspera.EM_TRIAGEM },
-            });
+            novoStatusListaEspera = StatusListaEspera.EM_TRIAGEM;
         } else if (
             session.id_Tipo_Atendimento === TipoAtendimento.PSICOTERAPIA &&
             paciente.id_Status === StatusListaEspera.TRIAGEM_APROVADA
         ) {
-            updateListaEsperaPromise = this.prisma.listaEspera.update({
-                where: { id_Lista: session.id_Lista },
-                data: { id_Status: StatusListaEspera.EM_PSICOTERAPIA },
-            });
+            novoStatusListaEspera = StatusListaEspera.EM_PSICOTERAPIA;
         }
 
-        const queries: Prisma.PrismaPromise<unknown>[] = [
+        return this.prisma.$tenantTransaction(async (tx) => {
+            // `as ...UncheckedCreateInput`: id_Clinica é obrigatório no tipo gerado pelo Prisma,
+            // mas Prisma.TransactionClient não conhece a extension — tenant.extension.ts
+            // carimba id_Clinica em runtime via $allOperations (coberto por
+            // tenant.extension.spec.ts). Não adicionar id_Clinica manualmente aqui.
             // 1. Cria a sessão
-            this.prisma.atendimento.create({
+            const createdSession = await tx.atendimento.create({
                 data: {
                     dataHoraInicio: session.dataHoraInicio,
                     dataHoraFim: session.dataHoraFim,
@@ -252,19 +249,19 @@ export class SessionService {
                     id_Estagiario_Executor: session.id_Estagiario_Executor,
                     id_Supervisor_Executor: session.id_Supervisor_Executor,
                     observacoes: session.observacoes,
-                },
-            }),
-        ];
+                } as Prisma.AtendimentoUncheckedCreateInput,
+            });
 
-        // 2. Adiciona a atualização de status (se houver)
-        if (updateListaEsperaPromise) {
-            queries.push(updateListaEsperaPromise);
-        }
+            // 2. Atualiza o status da lista de espera (se necessário)
+            if (novoStatusListaEspera) {
+                await tx.listaEspera.update({
+                    where: { id_Lista: session.id_Lista },
+                    data: { id_Status: novoStatusListaEspera },
+                });
+            }
 
-        // Executa as queries em transação
-        const [createdSession] = await this.prisma.$transaction(queries);
-
-        return createdSession;
+            return createdSession;
+        });
     }
 
     async findAll(user: TokenDto, pagination: PaginationDto) {
@@ -427,13 +424,10 @@ export class SessionService {
             throw new BadRequestException('Só é possível cancelar uma sessão que esteja agendada.');
         }
 
-        let updateListaEsperaPromise: Prisma.PrismaPromise<unknown> | null = null;
+        let novoStatusListaEspera: StatusListaEspera | null = null;
         if (session.id_Tipo_Atendimento === TipoAtendimento.TRIAGEM) {
             // Se cancelou uma triagem, paciente volta para "Em espera"
-            updateListaEsperaPromise = this.prisma.listaEspera.update({
-                where: { id_Lista: session.id_Lista },
-                data: { id_Status: StatusListaEspera.EM_ESPERA },
-            });
+            novoStatusListaEspera = StatusListaEspera.EM_ESPERA;
         } else if (session.id_Tipo_Atendimento === TipoAtendimento.PSICOTERAPIA) {
             const hasOtherPsicoterapia = await this.prisma.prontuario.findFirst({
                 where: {
@@ -449,25 +443,23 @@ export class SessionService {
             });
 
             if (!hasOtherPsicoterapia) {
-                updateListaEsperaPromise = this.prisma.listaEspera.update({
-                    where: { id_Lista: session.id_Lista },
-                    data: { id_Status: StatusListaEspera.TRIAGEM_APROVADA },
-                });
+                novoStatusListaEspera = StatusListaEspera.TRIAGEM_APROVADA;
             }
         }
 
-        const queries: Prisma.PrismaPromise<unknown>[] = [
-            this.prisma.atendimento.update({
+        await this.prisma.$tenantTransaction(async (tx) => {
+            await tx.atendimento.update({
                 where: { id_Atendimento: id },
                 data: { id_Status: StatusAtendimento.CANCELADO },
-            }),
-        ];
+            });
 
-        if (updateListaEsperaPromise) {
-            queries.push(updateListaEsperaPromise);
-        }
-
-        await this.prisma.$transaction(queries);
+            if (novoStatusListaEspera) {
+                await tx.listaEspera.update({
+                    where: { id_Lista: session.id_Lista },
+                    data: { id_Status: novoStatusListaEspera },
+                });
+            }
+        });
 
         return { message: `Sessão (${id}) cancelada com sucesso.` };
     }
