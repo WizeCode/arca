@@ -9,9 +9,8 @@ import { SessionModule } from './session/session.module';
 import { MedicalRecordModule } from './medical_record/medical_record.module';
 import { PdfModule } from './pdf/pdf.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
-import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 
 @Module({
     imports: [
@@ -38,9 +37,6 @@ import { TenantContextInterceptor } from './common/interceptors/tenant-context.i
         PdfModule,
     ],
     controllers: [AppController],
-    providers: [
-        { provide: APP_GUARD, useClass: ThrottlerGuard },
-        { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
-    ],
+    providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

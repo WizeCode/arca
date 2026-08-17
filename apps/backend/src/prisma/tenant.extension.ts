@@ -1,13 +1,14 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 import type { ClsService, ClsStore } from 'nestjs-cls';
-import { TENANT_SCOPED_MODELS } from './tenant-scoped-models';
 import { UUID } from 'node:crypto';
 
 export interface TenantClsStore extends ClsStore {
     clinicaId?: UUID;
     tenantTxActive?: boolean;
 }
+
+const TENANT_SCOPED_MODELS: readonly string[] = ['Usuario', 'ListaEspera', 'Atendimento', 'Prontuario', 'LogAuditoria'];
 
 const TENANT_DATA_OPERATIONS = new Set(['create', 'createMany', 'createManyAndReturn']);
 

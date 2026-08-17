@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from 'src/prisma/prisma.service';
 import jwtConfig from './config/jwt.config';
@@ -9,6 +10,7 @@ import { RoleAccess } from 'src/common/enums/status.enum';
 describe('JwtStrategy', () => {
     let strategy: JwtStrategy;
     const mockPrisma = { usuario: { findUnique: jest.fn() } };
+    const mockCls = { set: jest.fn(), get: jest.fn() };
 
     const payload: TokenDto = {
         sub: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -31,6 +33,10 @@ describe('JwtStrategy', () => {
                 {
                     provide: PrismaService,
                     useValue: mockPrisma,
+                },
+                {
+                    provide: ClsService,
+                    useValue: mockCls,
                 },
                 {
                     provide: jwtConfig.KEY,
@@ -67,6 +73,18 @@ describe('JwtStrategy', () => {
             });
         });
 
+        it('sets clinicaId on the CLS context when the user is active and clinicaId matches the database', async () => {
+            mockPrisma.usuario.findUnique.mockResolvedValue({
+                id_User: payload.sub,
+                isActive: true,
+                id_Clinica: payload.clinicaId,
+            });
+
+            await strategy.validate(payload);
+
+            expect(mockCls.set).toHaveBeenCalledWith('clinicaId', payload.clinicaId);
+        });
+
         it('throws UnauthorizedException when the clinicaId in the token no longer matches the user (moved to another clinic)', async () => {
             mockPrisma.usuario.findUnique.mockResolvedValue({
                 id_User: payload.sub,
@@ -75,6 +93,7 @@ describe('JwtStrategy', () => {
             });
 
             await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+            expect(mockCls.set).not.toHaveBeenCalled();
         });
 
         it('throws UnauthorizedException when the user is inactive', async () => {
@@ -85,6 +104,7 @@ describe('JwtStrategy', () => {
             });
 
             await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+            expect(mockCls.set).not.toHaveBeenCalled();
         });
     });
 });
