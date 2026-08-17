@@ -72,7 +72,18 @@ export function tenantExtension(prisma: PrismaClient, cls: ClsService<TenantClsS
                     );
                 }
 
-                return prisma.$transaction(async (tx) => {
+                // `this` propositalmente sem tipo explícito: anotar `this: PrismaClient` aqui
+                // vaza para a assinatura exposta em TenantPrismaClient, e todo chamador real
+                // (cujo `this.prisma` é o client extendido, não PrismaClient puro) passa a
+                // falhar em "'this' context is not assignable" no tsc. getExtensionContext
+                // não depende do tipo declarado de `this` para funcionar em runtime (é a
+                // função identidade — ver comentário acima); só precisa do valor correto,
+                // que o Prisma já garante estar vinculado ao client extendido.
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- `this` implícito é `any` de propósito, ver comentário acima
+                const ctx = Prisma.getExtensionContext(this);
+
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- ctx é `any` pelo mesmo motivo; $transaction em si é chamado com callback tipado
+                return await ctx.$transaction(async (tx: Prisma.TransactionClient) => {
                     await tx.$executeRaw`SELECT set_config('app.current_clinica_id', ${clinicaId}, true)`;
                     cls.set('tenantTxActive', true);
                     try {
