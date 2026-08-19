@@ -1,6 +1,10 @@
 import { INestApplication } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
+import { UUID } from 'node:crypto';
 import { createTestApp } from './setup';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
+import { TenantClsStore } from 'src/prisma/tenant.extension';
 
 /**
  * ADR 0001, seção 5 — jwt.strategy.ts#validate busca o Usuario por id_User
