@@ -2,7 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { RoleAccess } from '../src/common/enums/status.enum';
 
-const prisma = new PrismaClient();
+// Seeding é provisionamento, não uma requisição de clínica específica — roda com
+// DIRECT_URL (role superuser/bypassrls), o mesmo caminho privilegiado das migrations,
+// em vez de arca_app (sujeito a RLS via FORCE ROW LEVEL SECURITY nas tabelas escopadas).
+const prisma = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
 
 async function main() {
     console.log('Iniciando processo de seed...');
