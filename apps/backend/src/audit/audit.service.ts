@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Inject, Injectable } from '@nestjs/common';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
 import { Prisma } from '@prisma/client'; // Importa o tipo JsonValue
 import { paginate } from 'src/common/dto/pagination.dto';
 import { AuditFilterDto } from './dto/audit-filter.dto';
@@ -16,11 +16,15 @@ export interface CreateAuditLogDto {
 
 @Injectable()
 export class AuditService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(@Inject(TENANT_PRISMA) private readonly prisma: TenantPrismaClient) {}
 
     async create(logData: CreateAuditLogDto) {
         return await this.prisma.logAuditoria.create({
-            data: logData,
+            // `as Prisma.LogAuditoriaUncheckedCreateInput`: id_Clinica é obrigatório no tipo
+            // gerado pelo Prisma, mas tenant.extension.ts carimba id_Clinica em runtime via
+            // $allOperations (coberto por tenant.extension.spec.ts). Não adicionar id_Clinica
+            // manualmente aqui.
+            data: logData as Prisma.LogAuditoriaUncheckedCreateInput,
         });
     }
 

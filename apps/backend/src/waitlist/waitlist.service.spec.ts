@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ClsService } from 'nestjs-cls';
 import { WaitlistService } from './waitlist.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA } from 'src/prisma/prisma.module';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusListaEspera } from 'src/common/enums/status.enum';
 import { UUID } from 'node:crypto';
@@ -9,7 +10,12 @@ import { CreateWaitlistDto } from './dto/create-waitlist.dto';
 describe('WaitlistService', () => {
     let service: WaitlistService;
 
+    const mockClinica = { id_Clinica: 'clinica-uuid', isActive: true };
+
     const mockPrisma = {
+        clinica: {
+            findFirstOrThrow: jest.fn(),
+        },
         listaEspera: {
             findFirst: jest.fn(),
             findUnique: jest.fn(),
@@ -20,13 +26,22 @@ describe('WaitlistService', () => {
         },
     };
 
+    const mockCls = { set: jest.fn(), get: jest.fn() };
+
     beforeEach(async () => {
+        jest.clearAllMocks();
+        mockPrisma.clinica.findFirstOrThrow.mockResolvedValue(mockClinica);
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 WaitlistService,
                 {
-                    provide: PrismaService,
+                    provide: TENANT_PRISMA,
                     useValue: mockPrisma,
+                },
+                {
+                    provide: ClsService,
+                    useValue: mockCls,
                 },
             ],
         }).compile();

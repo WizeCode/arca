@@ -1,13 +1,17 @@
 import {
     BadRequestException,
+    Inject,
     Injectable,
     InternalServerErrorException,
     Logger,
     NotFoundException,
 } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import { CreateWaitlistDto } from './dto/create-waitlist.dto';
 import { UpdateWaitlistDto } from './dto/update-waitlist.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
+import type { TenantClsStore } from 'src/prisma/tenant.extension';
+import { Prisma } from '@prisma/client';
 import { UUID } from 'node:crypto';
 import { StatusListaEspera } from 'src/common/enums/status.enum';
 import { paginate, PaginationDto } from 'src/common/dto/pagination.dto';
@@ -16,9 +20,24 @@ import { paginate, PaginationDto } from 'src/common/dto/pagination.dto';
 export class WaitlistService {
     private readonly logger = new Logger(WaitlistService.name);
 
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        @Inject(TENANT_PRISMA) private prisma: TenantPrismaClient,
+        private cls: ClsService<TenantClsStore>,
+    ) {}
+
+    // Endpoint público (sem JWT/tenant no contexto): resolve a clínica ativa
+    // conforme ADR 0001 ("única clínica ativa"). findFirstOrThrow deixa de ser
+    // válido no dia em que existir uma segunda clínica real — nesse cenário
+    // isso vira um bug silencioso (pega sempre a primeira clínica ativa
+    // encontrada) até que uma seleção de clínica real seja implementada.
+    private async resolveClinicaAtivaContext(): Promise<void> {
+        const clinica = await this.prisma.clinica.findFirstOrThrow({ where: { isActive: true } });
+        this.cls.set('clinicaId', clinica.id_Clinica as UUID);
+    }
 
     async create(body: CreateWaitlistDto) {
+        await this.resolveClinicaAtivaContext();
+
         const existingActiveEntry = await this.prisma.listaEspera.findFirst({
             where: {
                 CPF: body.CPF,
@@ -39,6 +58,10 @@ export class WaitlistService {
             );
 
         const newWaitlistEntry = await this.prisma.listaEspera.create({
+            // `as Prisma.ListaEsperaUncheckedCreateInput`: id_Clinica é obrigatório no tipo
+            // gerado pelo Prisma, mas tenant.extension.ts carimba id_Clinica em runtime via
+            // $allOperations (coberto por tenant.extension.spec.ts). Não adicionar id_Clinica
+            // manualmente aqui.
             data: {
                 nomeRegistro: body.nomeRegistro,
                 nomeSocial: body.nomeSocial,
@@ -55,7 +78,7 @@ export class WaitlistService {
                 id_Genero: body.id_Genero,
                 id_Etnia: body.id_Etnia,
                 id_Escolaridade: body.id_Escolaridade,
-            },
+            } as Prisma.ListaEsperaUncheckedCreateInput,
         });
 
         return newWaitlistEntry;
@@ -105,6 +128,8 @@ export class WaitlistService {
     }
 
     async findPublicPosition(id: UUID) {
+        await this.resolveClinicaAtivaContext();
+
         const waitlistEntry = await this.prisma.listaEspera.findUnique({
             where: { id_Lista: id },
             select: {
@@ -135,6 +160,8 @@ export class WaitlistService {
     }
 
     async findPositions() {
+        await this.resolveClinicaAtivaContext();
+
         const waitlistEntries = await this.prisma.listaEspera.findMany({
             select: {
                 createdAt: true,

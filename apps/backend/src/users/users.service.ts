@@ -2,13 +2,14 @@ import {
     BadRequestException,
     ConflictException,
     ForbiddenException,
+    Inject,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
 import { HashingServiceProtocol } from 'src/auth/hash/hashing.service';
 import { UUID } from 'node:crypto';
 import { TokenDto } from 'src/common/dto/token.dto';
@@ -18,7 +19,7 @@ import { RoleAccess } from 'src/common/enums/status.enum';
 @Injectable()
 export class UsersService {
     constructor(
-        private prisma: PrismaService,
+        @Inject(TENANT_PRISMA) private prisma: TenantPrismaClient,
         private HashingService: HashingServiceProtocol,
     ) {}
 
@@ -68,13 +69,17 @@ export class UsersService {
         const passwordHash = await this.HashingService.hash(createUserDto.senha);
 
         return this.prisma.usuario.create({
+            // `as Prisma.UsuarioUncheckedCreateInput`: id_Clinica é obrigatório no tipo
+            // gerado pelo Prisma, mas tenant.extension.ts carimba id_Clinica em runtime via
+            // $allOperations (coberto por tenant.extension.spec.ts). Não adicionar id_Clinica
+            // manualmente aqui.
             data: {
                 nome: createUserDto.nome,
                 email: createUserDto.email,
                 senhaHash: passwordHash,
                 roleId: createUserDto.roleId,
                 CRP: createUserDto.crp ?? null,
-            },
+            } as Prisma.UsuarioUncheckedCreateInput,
             select: {
                 id_User: true,
                 nome: true,

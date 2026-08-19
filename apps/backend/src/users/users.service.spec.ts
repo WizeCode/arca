@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { HashingServiceProtocol } from 'src/auth/hash/hashing.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA } from 'src/prisma/prisma.module';
 import { randomUUID, UUID } from 'crypto';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { TokenDto } from 'src/common/dto/token.dto';
@@ -31,7 +31,7 @@ describe('UserService', () => {
                     useValue: mockHashing,
                 },
                 {
-                    provide: PrismaService,
+                    provide: TENANT_PRISMA,
                     useValue: mockPrisma,
                 },
             ],

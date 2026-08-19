@@ -8,7 +8,7 @@ import { UnauthorizedException } from '@nestjs/common';
 
 describe('AuthService', () => {
     let service: AuthService;
-    const mockPrisma = { usuario: { findFirst: jest.fn() } };
+    const mockPrisma = { $queryRaw: jest.fn() };
     const mockHashing = { compare: jest.fn() };
     const mockJwtService = { signAsync: jest.fn() };
 
@@ -19,6 +19,15 @@ describe('AuthService', () => {
         senhaHash: 'hash-qualquer',
         roleId: 4,
         id_Clinica: 'uuid-clinica-123',
+    };
+
+    const loginLookupRow = {
+        id_user: user.id_User,
+        nome: user.nome,
+        email: user.email,
+        senha_hash: user.senhaHash,
+        role_id: user.roleId,
+        id_clinica: user.id_Clinica,
     };
 
     beforeEach(async () => {
@@ -58,7 +67,7 @@ describe('AuthService', () => {
 
     describe('validateUser', () => {
         it('should return user data when credentials are valid', async () => {
-            mockPrisma.usuario.findFirst.mockResolvedValue(user);
+            mockPrisma.$queryRaw.mockResolvedValue([loginLookupRow]);
             mockHashing.compare.mockResolvedValue(true);
 
             const resultado = await service.validateUser({ email: 'pedro@test.com', password: '123456' });
@@ -73,7 +82,7 @@ describe('AuthService', () => {
         });
 
         it('should throw UnauthorizedException when user does not exist or is inactive', async () => {
-            mockPrisma.usuario.findFirst.mockResolvedValue(undefined);
+            mockPrisma.$queryRaw.mockResolvedValue([]);
 
             await expect(
                 service.validateUser({
@@ -84,7 +93,7 @@ describe('AuthService', () => {
         });
 
         it('should throw UnauthorizedException when password is incorrect', async () => {
-            mockPrisma.usuario.findFirst.mockResolvedValue(user);
+            mockPrisma.$queryRaw.mockResolvedValue([loginLookupRow]);
             mockHashing.compare.mockResolvedValue(false);
 
             await expect(

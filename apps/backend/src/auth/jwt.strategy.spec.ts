@@ -9,7 +9,7 @@ import { RoleAccess } from 'src/common/enums/status.enum';
 
 describe('JwtStrategy', () => {
     let strategy: JwtStrategy;
-    const mockPrisma = { usuario: { findUnique: jest.fn() } };
+    const mockPrisma = { $queryRaw: jest.fn() };
     const mockCls = { set: jest.fn(), get: jest.fn() };
 
     const payload: TokenDto = {
@@ -59,26 +59,20 @@ describe('JwtStrategy', () => {
 
     describe('validate', () => {
         it('returns the validated payload when the user is active and clinicaId matches the database', async () => {
-            mockPrisma.usuario.findUnique.mockResolvedValue({
-                id_User: payload.sub,
-                isActive: true,
-                id_Clinica: payload.clinicaId,
-            });
+            mockPrisma.$queryRaw.mockResolvedValue([
+                { id_user: payload.sub, is_active: true, id_clinica: payload.clinicaId },
+            ]);
 
             const result = await strategy.validate(payload);
 
             expect(result).toEqual(payload);
-            expect(mockPrisma.usuario.findUnique).toHaveBeenCalledWith({
-                where: { id_User: payload.sub },
-            });
+            expect(mockPrisma.$queryRaw).toHaveBeenCalled();
         });
 
         it('sets clinicaId on the CLS context when the user is active and clinicaId matches the database', async () => {
-            mockPrisma.usuario.findUnique.mockResolvedValue({
-                id_User: payload.sub,
-                isActive: true,
-                id_Clinica: payload.clinicaId,
-            });
+            mockPrisma.$queryRaw.mockResolvedValue([
+                { id_user: payload.sub, is_active: true, id_clinica: payload.clinicaId },
+            ]);
 
             await strategy.validate(payload);
 
@@ -86,22 +80,25 @@ describe('JwtStrategy', () => {
         });
 
         it('throws UnauthorizedException when the clinicaId in the token no longer matches the user (moved to another clinic)', async () => {
-            mockPrisma.usuario.findUnique.mockResolvedValue({
-                id_User: payload.sub,
-                isActive: true,
-                id_Clinica: 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33',
-            });
+            mockPrisma.$queryRaw.mockResolvedValue([
+                { id_user: payload.sub, is_active: true, id_clinica: 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33' },
+            ]);
 
             await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
             expect(mockCls.set).not.toHaveBeenCalled();
         });
 
         it('throws UnauthorizedException when the user is inactive', async () => {
-            mockPrisma.usuario.findUnique.mockResolvedValue({
-                id_User: payload.sub,
-                isActive: false,
-                id_Clinica: payload.clinicaId,
-            });
+            mockPrisma.$queryRaw.mockResolvedValue([
+                { id_user: payload.sub, is_active: false, id_clinica: payload.clinicaId },
+            ]);
+
+            await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+            expect(mockCls.set).not.toHaveBeenCalled();
+        });
+
+        it('throws UnauthorizedException when the user does not exist', async () => {
+            mockPrisma.$queryRaw.mockResolvedValue([]);
 
             await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
             expect(mockCls.set).not.toHaveBeenCalled();
