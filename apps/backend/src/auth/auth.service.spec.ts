@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import jwtConfig from './config/jwt.config';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { UUID } from 'node:crypto';
 
 describe('AuthService', () => {
     let service: AuthService;
@@ -18,7 +19,7 @@ describe('AuthService', () => {
         email: 'pedro@test.com',
         senhaHash: 'hash-qualquer',
         roleId: 4,
-        id_Clinica: 'uuid-clinica-123',
+        id_Clinica: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' as UUID,
     };
 
     const loginLookupRow = {
@@ -77,7 +78,7 @@ describe('AuthService', () => {
                 nome: 'Pedro',
                 email: 'pedro@test.com',
                 roleId: 4,
-                id_Clinica: 'uuid-clinica-123',
+                id_Clinica: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
             });
         });
 

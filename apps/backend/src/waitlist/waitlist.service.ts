@@ -25,11 +25,8 @@ export class WaitlistService {
         private cls: ClsService<TenantClsStore>,
     ) {}
 
-    // Endpoint público (sem JWT/tenant no contexto): resolve a clínica ativa
-    // conforme ADR 0001 ("única clínica ativa"). findFirstOrThrow deixa de ser
-    // válido no dia em que existir uma segunda clínica real — nesse cenário
-    // isso vira um bug silencioso (pega sempre a primeira clínica ativa
-    // encontrada) até que uma seleção de clínica real seja implementada.
+    // Endpoint público, sem tenant no contexto: resolve a única clínica ativa (ADR 0001).
+    // Deixa de ser válido com uma segunda clínica real — vira bug silencioso até então.
     private async resolveClinicaAtivaContext(): Promise<void> {
         const clinica = await this.prisma.clinica.findFirstOrThrow({ where: { isActive: true } });
         this.cls.set('clinicaId', clinica.id_Clinica as UUID);
@@ -58,10 +55,7 @@ export class WaitlistService {
             );
 
         const newWaitlistEntry = await this.prisma.listaEspera.create({
-            // `as Prisma.ListaEsperaUncheckedCreateInput`: id_Clinica é obrigatório no tipo
-            // gerado pelo Prisma, mas tenant.extension.ts carimba id_Clinica em runtime via
-            // $allOperations (coberto por tenant.extension.spec.ts). Não adicionar id_Clinica
-            // manualmente aqui.
+            // id_Clinica é obrigatório no tipo Prisma, mas tenant.extension.ts carimba em runtime.
             data: {
                 nomeRegistro: body.nomeRegistro,
                 nomeSocial: body.nomeSocial,

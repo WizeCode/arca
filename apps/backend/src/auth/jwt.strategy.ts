@@ -2,6 +2,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
+import { UUID } from 'node:crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TokenDto } from 'src/common/dto/token.dto';
 import type { TenantClsStore } from 'src/prisma/tenant.extension';
@@ -11,7 +12,7 @@ import { ConfigType } from '@nestjs/config';
 interface JwtLookupRow {
     id_user: string;
     is_active: boolean;
-    id_clinica: string;
+    id_clinica: UUID;
 }
 
 @Injectable()
@@ -33,11 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: TokenDto) {
-        // Busca por id_User acontece antes de sabermos a clínica atual do usuário
-        // (é o que essa consulta descobre, pra comparar com o clinicaId do token),
-        // então não há app.current_clinica_id para setar aqui. Mesmo problema de
-        // auth.service.ts#validateUser (ver migração add_login_lookup_function) —
-        // busca passa pela função SECURITY DEFINER buscar_usuario_por_id.
+        // Descobre a clínica atual do usuário antes de podermos setar app.current_clinica_id —
+        // por isso passa pela função SECURITY DEFINER buscar_usuario_por_id, não por tenantPrisma.
         const rows = await this.prisma.$queryRaw<JwtLookupRow[]>`
             SELECT * FROM buscar_usuario_por_id(${payload.sub}::uuid)
         `;

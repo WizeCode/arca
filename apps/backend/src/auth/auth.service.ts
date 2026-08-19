@@ -1,5 +1,6 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { UUID } from 'node:crypto';
 import { HashingServiceProtocol } from './hash/hashing.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -14,7 +15,7 @@ interface LoginLookupRow {
     email: string;
     senha_hash: string;
     role_id: number;
-    id_clinica: string;
+    id_clinica: UUID;
 }
 
 @Injectable()
@@ -29,14 +30,6 @@ export class AuthService {
     ) {}
 
     async validateUser(body: LoginDto): Promise<ValidatedUserDto> {
-        // Busca por e-mail acontece antes de sabermos a clínica do usuário
-        // (é o que essa consulta descobre), então não há app.current_clinica_id
-        // para setar aqui. Com FORCE ROW LEVEL SECURITY em USUARIOS, uma query
-        // direta via prisma.usuario.findFirst ficaria bloqueada mesmo para um
-        // usuário existente — por isso a busca passa pela função SECURITY
-        // DEFINER buscar_usuario_login (ver migração add_login_lookup_function),
-        // que reconsulta a tabela sob uma role dedicada em vez de usar RLS bypass
-        // na role de runtime da aplicação.
         const rows = await this.prisma.$queryRaw<LoginLookupRow[]>`
             SELECT * FROM buscar_usuario_login(${body.email})
         `;

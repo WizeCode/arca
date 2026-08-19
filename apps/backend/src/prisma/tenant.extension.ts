@@ -72,13 +72,9 @@ export function tenantExtension(prisma: PrismaClient, cls: ClsService<TenantClsS
                     );
                 }
 
-                // `this` propositalmente sem tipo explícito: anotar `this: PrismaClient` aqui
-                // vaza para a assinatura exposta em TenantPrismaClient, e todo chamador real
-                // (cujo `this.prisma` é o client extendido, não PrismaClient puro) passa a
-                // falhar em "'this' context is not assignable" no tsc. getExtensionContext
-                // não depende do tipo declarado de `this` para funcionar em runtime (é a
-                // função identidade — ver comentário acima); só precisa do valor correto,
-                // que o Prisma já garante estar vinculado ao client extendido.
+                // `this` fica implícito de propósito: tipar `this: PrismaClient` vaza pra
+                // assinatura de TenantPrismaClient e quebra todo chamador real, cujo
+                // `this.prisma` é o client extendido, não PrismaClient puro.
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- `this` implícito é `any` de propósito, ver comentário acima
                 const ctx = Prisma.getExtensionContext(this);
 
