@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Min, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { RoleAccess } from 'src/common/enums/status.enum';
 
 export class CreateUserDto {
     @ApiProperty({ example: 'Pedro Silva', description: 'Nome completo do usuário (máx. 50 caracteres)' })
@@ -26,10 +27,9 @@ export class CreateUserDto {
         example: 4,
         description: 'ID do perfil de acesso: 1=Coordenador, 2=Secretário, 3=Supervisor, 4=Estagiário',
     })
-    @IsInt()
-    @Min(1)
+    @IsEnum(RoleAccess)
     @Transform(({ value }: { value: string }) => parseInt(value))
-    roleId: number;
+    roleId: RoleAccess;
 
     @ApiPropertyOptional({
         example: '06/12345',

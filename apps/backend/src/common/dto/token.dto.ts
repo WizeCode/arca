@@ -23,6 +23,10 @@ export class TokenDto {
     @Min(1)
     access: RoleAccess;
 
+    @IsUUID()
+    @IsNotEmpty()
+    clinicaId: UUID;
+
     @IsInt()
     iat: number;
 

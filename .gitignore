@@ -42,4 +42,7 @@ yarn-error.log*
 *.pem
 .markdownlint-cli2.jsonc
 
+# Superpowers subagent-driven-development scratch workspace
+.superpowers/
+
 apps/generated

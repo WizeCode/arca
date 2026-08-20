@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ClsService } from 'nestjs-cls';
 import { WaitlistService } from './waitlist.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA } from 'src/prisma/prisma.module';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StatusListaEspera } from 'src/common/enums/status.enum';
 import { UUID } from 'node:crypto';
@@ -9,7 +10,12 @@ import { CreateWaitlistDto } from './dto/create-waitlist.dto';
 describe('WaitlistService', () => {
     let service: WaitlistService;
 
+    const mockClinica = { id_Clinica: 'clinica-uuid', slug: 'clinica-teste', isActive: true };
+
     const mockPrisma = {
+        clinica: {
+            findFirst: jest.fn(),
+        },
         listaEspera: {
             findFirst: jest.fn(),
             findUnique: jest.fn(),
@@ -20,13 +26,22 @@ describe('WaitlistService', () => {
         },
     };
 
+    const mockCls = { set: jest.fn(), get: jest.fn() };
+
     beforeEach(async () => {
+        jest.clearAllMocks();
+        mockPrisma.clinica.findFirst.mockResolvedValue(mockClinica);
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 WaitlistService,
                 {
-                    provide: PrismaService,
+                    provide: TENANT_PRISMA,
                     useValue: mockPrisma,
+                },
+                {
+                    provide: ClsService,
+                    useValue: mockCls,
                 },
             ],
         }).compile();
@@ -61,8 +76,15 @@ describe('WaitlistService', () => {
 
                 mockPrisma.listaEspera.findFirst.mockResolvedValue(undefined);
                 mockPrisma.listaEspera.create.mockResolvedValue(body);
-                const result = await service.create(body);
+                const result = await service.create('clinica-teste', body);
                 expect(result).toEqual(body);
+            });
+
+            it('should throw NotFoundException when clinica slug does not resolve to an active clinica', async () => {
+                const body = { CPF: '123.456.789-00' } as CreateWaitlistDto;
+                mockPrisma.clinica.findFirst.mockResolvedValue(null);
+
+                await expect(service.create('clinica-inexistente', body)).rejects.toThrow(NotFoundException);
             });
 
             it('should throw BadRequestException when already have the same CPF of another ACTIVE patient', async () => {
@@ -88,7 +110,7 @@ describe('WaitlistService', () => {
                     id_Lista: 'uuid-existente',
                     CPF: '123.456.789-00',
                 });
-                await expect(service.create(body)).rejects.toThrow(BadRequestException);
+                await expect(service.create('clinica-teste', body)).rejects.toThrow(BadRequestException);
             });
         });
 
@@ -148,7 +170,7 @@ describe('WaitlistService', () => {
                     mockPrisma.listaEspera.findUnique.mockResolvedValue(patient);
                     mockPrisma.listaEspera.count.mockResolvedValue(0);
 
-                    const result = await service.findPublicPosition('uuid-1' as UUID);
+                    const result = await service.findPublicPosition('clinica-teste', 'uuid-1' as UUID);
                     expect(result).toEqual({
                         ...patient,
                         posicaoNaLista: 1,
@@ -159,7 +181,17 @@ describe('WaitlistService', () => {
                 it('should throw NotFoundException when patient is not found', async () => {
                     mockPrisma.listaEspera.findUnique.mockResolvedValue(undefined);
 
-                    await expect(service.findPublicPosition('uuid-1' as UUID)).rejects.toThrow(NotFoundException);
+                    await expect(service.findPublicPosition('clinica-teste', 'uuid-1' as UUID)).rejects.toThrow(
+                        NotFoundException,
+                    );
+                });
+
+                it('should throw NotFoundException when clinica slug does not resolve to an active clinica', async () => {
+                    mockPrisma.clinica.findFirst.mockResolvedValue(null);
+
+                    await expect(service.findPublicPosition('clinica-inexistente', 'uuid-1' as UUID)).rejects.toThrow(
+                        NotFoundException,
+                    );
                 });
             });
 
@@ -169,7 +201,7 @@ describe('WaitlistService', () => {
 
                     mockPrisma.listaEspera.findMany.mockResolvedValue(entries);
 
-                    const result = await service.findPositions();
+                    const result = await service.findPositions('clinica-teste');
                     expect(result).toEqual({
                         qntFila: 2,
                         ultimaAtualizacao: entries[0].createdAt.toISOString(),
@@ -179,7 +211,7 @@ describe('WaitlistService', () => {
                 it('should return empty queue when there are no patients', async () => {
                     mockPrisma.listaEspera.findMany.mockResolvedValue([]);
 
-                    const result = await service.findPositions();
+                    const result = await service.findPositions('clinica-teste');
                     expect(result.qntFila).toBe(0);
                 });
             });

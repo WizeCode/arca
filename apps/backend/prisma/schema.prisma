@@ -9,8 +9,29 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ===============================================
+// Modelo de Multi-tenancy (ADR 0001)
+// ===============================================
+
+model Clinica {
+  id_Clinica String   @id @default(uuid()) @map("ID_Clinica") @db.Uuid
+  nome       String   @db.VarChar(150)
+  slug       String   @unique @db.VarChar(100)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  usuarios      Usuario[]
+  listaEspera   ListaEspera[]
+  atendimentos  Atendimento[]
+  prontuarios   Prontuario[]
+  logsAuditoria LogAuditoria[]
+
+  @@map("CLINICAS")
 }
 
 // ===============================================
@@ -18,14 +39,16 @@ datasource db {
 // ===============================================
 
 model Usuario {
-  id_User   String  @id @default(uuid()) @map("ID_User") @db.Uuid
-  nome      String  @db.VarChar(50)
-  email     String  @unique @db.VarChar(100)
-  senhaHash String  @map("SenhaHash") @db.VarChar(255)
-  roleId    Int     @map("ID_Role") @db.SmallInt
-  CRP       String? @db.VarChar(9)
-  isActive  Boolean @default(true)
+  id_User    String  @id @default(uuid()) @map("ID_User") @db.Uuid
+  id_Clinica String  @map("ID_Clinica") @db.Uuid
+  nome       String  @db.VarChar(50)
+  email      String  @unique @db.VarChar(100)
+  senhaHash  String  @map("SenhaHash") @db.VarChar(255)
+  roleId     Int     @map("ID_Role") @db.SmallInt
+  CRP        String? @db.VarChar(9)
+  isActive   Boolean @default(true)
 
+  clinica                   Clinica        @relation(fields: [id_Clinica], references: [id_Clinica])
   role                      Role           @relation(fields: [roleId], references: [id_Role])
   logsExecutados            LogAuditoria[] @relation("UsuarioExecutorLogs")
   atendimentoComoEstagiario Atendimento[]  @relation("EstagiarioAtendimentos")
@@ -49,6 +72,7 @@ model Role {
 
 model Prontuario {
   id_Registro       String   @id @default(uuid()) @map("ID_Registro") @db.Uuid
+  id_Clinica        String   @map("ID_Clinica") @db.Uuid
   id_Atendimento    String   @db.Uuid
   conteudo          String   @db.Text
   dataEmissao       DateTime @default(now())
@@ -56,15 +80,17 @@ model Prontuario {
   id_Status         Int      @default(1) @db.SmallInt
   id_Tipo           Int      @default(1) @db.SmallInt
 
-  atendimento           Atendimento      @relation(fields: [id_Atendimento], references: [id_Atendimento])
-  status                StatusProntuario @relation(fields: [id_Status], references: [id_Status])
-  TipoProntuario        TipoProntuario  @relation(fields: [id_Tipo], references: [id_Tipo])
+  clinica        Clinica          @relation(fields: [id_Clinica], references: [id_Clinica])
+  atendimento    Atendimento      @relation(fields: [id_Atendimento], references: [id_Atendimento])
+  status         StatusProntuario @relation(fields: [id_Status], references: [id_Status])
+  TipoProntuario TipoProntuario   @relation(fields: [id_Tipo], references: [id_Tipo])
 
   @@map("REGISTRO_CLINICOS")
 }
 
 model LogAuditoria {
   id_Log                String   @id @default(uuid()) @map("ID_LOG") @db.Uuid
+  id_Clinica            String   @map("ID_Clinica") @db.Uuid
   id_Usuario_Executor   String   @db.Uuid
   nome_Usuario_Executor String   @db.VarChar(50)
   tipoAcao              String   @map("TipoAcao") @db.VarChar(100)
@@ -74,6 +100,7 @@ model LogAuditoria {
   acessoEm              DateTime @default(now())
   detalhes              Json?    @db.JsonB
 
+  clinica         Clinica @relation(fields: [id_Clinica], references: [id_Clinica])
   usuarioExecutor Usuario @relation("UsuarioExecutorLogs", fields: [id_Usuario_Executor], references: [id_User])
 
   @@map("LOGS_AUDITORIA")
@@ -81,6 +108,7 @@ model LogAuditoria {
 
 model Atendimento {
   id_Atendimento         String   @id @default(uuid()) @map("ID_Atendimento") @db.Uuid
+  id_Clinica             String   @map("ID_Clinica") @db.Uuid
   dataHoraInicio         DateTime @db.Timestamp()
   dataHoraFim            DateTime @db.Timestamp()
   id_Lista               String   @db.Uuid
@@ -90,6 +118,7 @@ model Atendimento {
   id_Tipo_Atendimento    Int      @db.SmallInt
   observacoes            String?  @db.Text
 
+  clinica            Clinica           @relation(fields: [id_Clinica], references: [id_Clinica])
   ListaEspera        ListaEspera       @relation(fields: [id_Lista], references: [id_Lista], onDelete: Cascade)
   estagiarioExecutor Usuario           @relation("EstagiarioAtendimentos", fields: [id_Estagiario_Executor], references: [id_User])
   supervisorExecutor Usuario           @relation("SupervisorAtendimentos", fields: [id_Supervisor_Executor], references: [id_User])
@@ -102,6 +131,7 @@ model Atendimento {
 
 model ListaEspera {
   id_Lista          String   @id @default(uuid()) @map("ID_Lista") @db.Uuid
+  id_Clinica        String   @map("ID_Clinica") @db.Uuid
   nomeRegistro      String   @db.VarChar(150)
   nomeSocial        String?  @db.VarChar(100)
   CPF               String   @default("") @db.Char(11)
@@ -120,6 +150,7 @@ model ListaEspera {
   id_Etnia          Int      @db.SmallInt
   id_Escolaridade   Int      @db.SmallInt
 
+  clinica      Clinica           @relation(fields: [id_Clinica], references: [id_Clinica])
   genero       Genero            @relation(fields: [id_Genero], references: [id_Genero])
   Etnia        Etnia             @relation(fields: [id_Etnia], references: [id_Etnia])
   escolaridade Escolaridade      @relation(fields: [id_Escolaridade], references: [id_Escolaridade])

@@ -1,7 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { ClsService } from 'nestjs-cls';
+import { UUID } from 'node:crypto';
 import { createTestApp } from './setup';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
+import type { TenantClsStore } from 'src/prisma/tenant.extension';
 import { CryptoService } from 'src/crypto/crypto.service';
 import {
     RoleAccess,
@@ -15,13 +20,14 @@ import {
 describe('Access Control (e2e)', () => {
     let app: INestApplication;
     let prisma: PrismaService;
+    let tenantPrisma: TenantPrismaClient;
+    let cls: ClsService<TenantClsStore>;
+    let clinicaId: UUID;
     let cryptoService: CryptoService;
 
     let adminToken: string;
     let estagiario1Token: string;
-    let estagiario2Token: string;
     let supervisor1Token: string;
-    let supervisor2Token: string;
 
     let estagiario1: { id_User: string };
     let supervisor1: { id_User: string };
@@ -39,7 +45,12 @@ describe('Access Control (e2e)', () => {
         app = await createTestApp();
         const server = app.getHttpServer();
         prisma = app.get(PrismaService);
+        tenantPrisma = app.get(TENANT_PRISMA);
+        cls = app.get(ClsService);
         cryptoService = app.get(CryptoService);
+
+        const clinicaPadrao = await prisma.clinica.findFirstOrThrow({ where: { slug: 'clinica-padrao' } });
+        clinicaId = clinicaPadrao.id_Clinica as UUID;
 
         adminToken = (
             await request(server).post('/auth/login').send({ email: 'admin@arca.com', password: 'Admin123!' })
@@ -64,123 +75,125 @@ describe('Access Control (e2e)', () => {
             })
         ).body;
 
-        estagiario1 = await prisma.usuario.findFirstOrThrow({ where: { email: 'estagiario@arca.com' } });
-        supervisor1 = await prisma.usuario.findFirstOrThrow({ where: { email: 'supervisor@arca.com' } });
+        await cls.runWith({ clinicaId }, async () => {
+            estagiario1 = await tenantPrisma.usuario.findFirstOrThrow({ where: { email: 'estagiario@arca.com' } });
+            supervisor1 = await tenantPrisma.usuario.findFirstOrThrow({ where: { email: 'supervisor@arca.com' } });
+        });
 
         estagiario1Token = (
             await request(server).post('/auth/login').send({ email: 'estagiario@arca.com', password: 'Estagiario123!' })
-        ).body.token;
-
-        estagiario2Token = (
-            await request(server).post('/auth/login').send({ email: 'estagiario2@e2e.com', password: 'Est2E2E123!' })
         ).body.token;
 
         supervisor1Token = (
             await request(server).post('/auth/login').send({ email: 'supervisor@arca.com', password: 'Supervisor123!' })
         ).body.token;
 
-        supervisor2Token = (
-            await request(server).post('/auth/login').send({ email: 'supervisor2@e2e.com', password: 'Sup2E2E123!' })
-        ).body.token;
+        await cls.runWith({ clinicaId }, async () => {
+            // `as Prisma.XUncheckedCreateInput`: id_Clinica é obrigatório no tipo gerado
+            // pelo Prisma, mas tenant.extension.ts carimba id_Clinica em runtime via
+            // $allOperations (mesma convenção de waitlist.service.ts). Não adicionar
+            // id_Clinica manualmente aqui.
+            paciente1 = await tenantPrisma.listaEspera.create({
+                data: {
+                    nomeRegistro: 'Paciente E2E 1',
+                    dataNascimento: new Date('1990-01-01'),
+                    telefonePessoal: '34999990001',
+                    contatoEmergencia: '34999990002',
+                    CPF: '00000000001',
+                    enderecoRua: 'Rua E2E',
+                    enderecoNumero: '100',
+                    enderecoBairro: 'Bairro E2E',
+                    enderecoCidade: 'Uberaba',
+                    enderecoEstado: 'MG',
+                    enderecoCEP: '38000000',
+                    id_Genero: 1,
+                    id_Etnia: 1,
+                    id_Escolaridade: 1,
+                    id_Status: StatusListaEspera.EM_TRIAGEM,
+                } as Prisma.ListaEsperaUncheckedCreateInput,
+            });
 
-        paciente1 = await prisma.listaEspera.create({
-            data: {
-                nomeRegistro: 'Paciente E2E 1',
-                dataNascimento: new Date('1990-01-01'),
-                telefonePessoal: '34999990001',
-                contatoEmergencia: '34999990002',
-                CPF: '00000000001',
-                enderecoRua: 'Rua E2E',
-                enderecoNumero: '100',
-                enderecoBairro: 'Bairro E2E',
-                enderecoCidade: 'Uberaba',
-                enderecoEstado: 'MG',
-                enderecoCEP: '38000000',
-                id_Genero: 1,
-                id_Etnia: 1,
-                id_Escolaridade: 1,
-                id_Status: StatusListaEspera.EM_TRIAGEM,
-            },
-        });
+            paciente2 = await tenantPrisma.listaEspera.create({
+                data: {
+                    nomeRegistro: 'Paciente E2E 2',
+                    dataNascimento: new Date('1995-05-15'),
+                    telefonePessoal: '34999990003',
+                    contatoEmergencia: '34999990004',
+                    CPF: '00000000002',
+                    enderecoRua: 'Rua E2E',
+                    enderecoNumero: '200',
+                    enderecoBairro: 'Bairro E2E',
+                    enderecoCidade: 'Uberaba',
+                    enderecoEstado: 'MG',
+                    enderecoCEP: '38000000',
+                    id_Genero: 1,
+                    id_Etnia: 1,
+                    id_Escolaridade: 1,
+                    id_Status: StatusListaEspera.EM_TRIAGEM,
+                } as Prisma.ListaEsperaUncheckedCreateInput,
+            });
 
-        paciente2 = await prisma.listaEspera.create({
-            data: {
-                nomeRegistro: 'Paciente E2E 2',
-                dataNascimento: new Date('1995-05-15'),
-                telefonePessoal: '34999990003',
-                contatoEmergencia: '34999990004',
-                CPF: '00000000002',
-                enderecoRua: 'Rua E2E',
-                enderecoNumero: '200',
-                enderecoBairro: 'Bairro E2E',
-                enderecoCidade: 'Uberaba',
-                enderecoEstado: 'MG',
-                enderecoCEP: '38000000',
-                id_Genero: 1,
-                id_Etnia: 1,
-                id_Escolaridade: 1,
-                id_Status: StatusListaEspera.EM_TRIAGEM,
-            },
-        });
+            atendimento1 = await tenantPrisma.atendimento.create({
+                data: {
+                    dataHoraInicio: new Date('2025-06-01T09:00:00'),
+                    dataHoraFim: new Date('2025-06-01T10:00:00'),
+                    id_Lista: paciente1.id_Lista,
+                    id_Estagiario_Executor: estagiario1.id_User,
+                    id_Supervisor_Executor: supervisor1.id_User,
+                    id_Tipo_Atendimento: TipoAtendimento.TRIAGEM,
+                    id_Status: StatusAtendimento.EM_ANDAMENTO,
+                } as Prisma.AtendimentoUncheckedCreateInput,
+            });
 
-        atendimento1 = await prisma.atendimento.create({
-            data: {
-                dataHoraInicio: new Date('2025-06-01T09:00:00'),
-                dataHoraFim: new Date('2025-06-01T10:00:00'),
-                id_Lista: paciente1.id_Lista,
-                id_Estagiario_Executor: estagiario1.id_User,
-                id_Supervisor_Executor: supervisor1.id_User,
-                id_Tipo_Atendimento: TipoAtendimento.TRIAGEM,
-                id_Status: StatusAtendimento.EM_ANDAMENTO,
-            },
-        });
+            atendimento2 = await tenantPrisma.atendimento.create({
+                data: {
+                    dataHoraInicio: new Date('2025-06-02T09:00:00'),
+                    dataHoraFim: new Date('2025-06-02T10:00:00'),
+                    id_Lista: paciente2.id_Lista,
+                    id_Estagiario_Executor: estagiario2.id_User,
+                    id_Supervisor_Executor: supervisor2.id_User,
+                    id_Tipo_Atendimento: TipoAtendimento.TRIAGEM,
+                    id_Status: StatusAtendimento.EM_ANDAMENTO,
+                } as Prisma.AtendimentoUncheckedCreateInput,
+            });
 
-        atendimento2 = await prisma.atendimento.create({
-            data: {
-                dataHoraInicio: new Date('2025-06-02T09:00:00'),
-                dataHoraFim: new Date('2025-06-02T10:00:00'),
-                id_Lista: paciente2.id_Lista,
-                id_Estagiario_Executor: estagiario2.id_User,
-                id_Supervisor_Executor: supervisor2.id_User,
-                id_Tipo_Atendimento: TipoAtendimento.TRIAGEM,
-                id_Status: StatusAtendimento.EM_ANDAMENTO,
-            },
-        });
+            prontuario1 = await tenantPrisma.prontuario.create({
+                data: {
+                    id_Atendimento: atendimento1.id_Atendimento,
+                    conteudo: cryptoService.encrypt({ relatorioDaSessao: 'Relatorio E2E 1', presente: true }),
+                    id_Status: StatusProntuario.EM_APROVACAO,
+                    id_Tipo: TipoProntuario.TRIAGEM,
+                } as Prisma.ProntuarioUncheckedCreateInput,
+            });
 
-        prontuario1 = await prisma.prontuario.create({
-            data: {
-                id_Atendimento: atendimento1.id_Atendimento,
-                conteudo: cryptoService.encrypt({ relatorioDaSessao: 'Relatorio E2E 1', presente: true }),
-                id_Status: StatusProntuario.EM_APROVACAO,
-                id_Tipo: TipoProntuario.TRIAGEM,
-            },
-        });
-
-        prontuario2 = await prisma.prontuario.create({
-            data: {
-                id_Atendimento: atendimento2.id_Atendimento,
-                conteudo: cryptoService.encrypt({ relatorioDaSessao: 'Relatorio E2E 2', presente: true }),
-                id_Status: StatusProntuario.EM_APROVACAO,
-                id_Tipo: TipoProntuario.TRIAGEM,
-            },
+            prontuario2 = await tenantPrisma.prontuario.create({
+                data: {
+                    id_Atendimento: atendimento2.id_Atendimento,
+                    conteudo: cryptoService.encrypt({ relatorioDaSessao: 'Relatorio E2E 2', presente: true }),
+                    id_Status: StatusProntuario.EM_APROVACAO,
+                    id_Tipo: TipoProntuario.TRIAGEM,
+                } as Prisma.ProntuarioUncheckedCreateInput,
+            });
         });
     }, 30000);
 
     afterAll(async () => {
-        await prisma.prontuario.deleteMany({
-            where: { id_Registro: { in: [prontuario1.id_Registro, prontuario2.id_Registro] } },
-        });
-        await prisma.atendimento.deleteMany({
-            where: { id_Atendimento: { in: [atendimento1.id_Atendimento, atendimento2.id_Atendimento] } },
-        });
-        await prisma.listaEspera.deleteMany({
-            where: { id_Lista: { in: [paciente1.id_Lista, paciente2.id_Lista] } },
-        });
-        await prisma.logAuditoria.deleteMany({
-            where: { id_Usuario_Executor: { in: [estagiario2.id_User, supervisor2.id_User] } },
-        });
-        await prisma.usuario.deleteMany({
-            where: { id_User: { in: [estagiario2.id_User, supervisor2.id_User] } },
+        await cls.runWith({ clinicaId }, async () => {
+            await tenantPrisma.prontuario.deleteMany({
+                where: { id_Registro: { in: [prontuario1.id_Registro, prontuario2.id_Registro] } },
+            });
+            await tenantPrisma.atendimento.deleteMany({
+                where: { id_Atendimento: { in: [atendimento1.id_Atendimento, atendimento2.id_Atendimento] } },
+            });
+            await tenantPrisma.listaEspera.deleteMany({
+                where: { id_Lista: { in: [paciente1.id_Lista, paciente2.id_Lista] } },
+            });
+            await tenantPrisma.logAuditoria.deleteMany({
+                where: { id_Usuario_Executor: { in: [estagiario2.id_User, supervisor2.id_User] } },
+            });
+            await tenantPrisma.usuario.deleteMany({
+                where: { id_User: { in: [estagiario2.id_User, supervisor2.id_User] } },
+            });
         });
         await app.close();
     });

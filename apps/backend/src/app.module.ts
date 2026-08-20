@@ -10,12 +10,17 @@ import { MedicalRecordModule } from './medical_record/medical_record.module';
 import { PdfModule } from './pdf/pdf.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { ClsModule } from 'nestjs-cls';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : '.env',
+        }),
+        ClsModule.forRoot({
+            global: true,
+            middleware: { mount: true },
         }),
         ThrottlerModule.forRoot([
             {

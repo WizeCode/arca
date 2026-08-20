@@ -1,8 +1,5 @@
+import { ValidatedUserDto } from './validated-user.dto';
+
 export interface LocalAuthRequest {
-    user: {
-        id_User: string;
-        nome: string;
-        email: string;
-        roleId: number;
-    };
+    user: ValidatedUserDto;
 }

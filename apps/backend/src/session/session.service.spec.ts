@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SessionService } from './session.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA } from 'src/prisma/prisma.module';
 import { CryptoService } from 'src/crypto/crypto.service';
 import {
     RoleAccess,
@@ -34,7 +34,10 @@ describe('SessionService', () => {
         },
         usuario: { findUnique: jest.fn() },
         prontuario: { findFirst: jest.fn() },
-        $transaction: jest.fn(),
+        // $tenantTransaction executa o callback passando o próprio mockPrisma como `tx` —
+        // os mocks de model já configurados acima (atendimento.create, listaEspera.update, ...)
+        // funcionam como as chamadas feitas via `tx` dentro da transação.
+        $tenantTransaction: jest.fn((fn: (tx: unknown) => Promise<unknown>) => fn(mockPrisma)),
     };
 
     const mockCrypto = { decryptConteudo: jest.fn() };
@@ -48,7 +51,7 @@ describe('SessionService', () => {
                     useValue: mockCrypto,
                 },
                 {
-                    provide: PrismaService,
+                    provide: TENANT_PRISMA,
                     useValue: mockPrisma,
                 },
             ],
@@ -95,7 +98,7 @@ describe('SessionService', () => {
                     mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                     mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
                     mockPrisma.atendimento.findFirst.mockResolvedValue(undefined);
-                    mockPrisma.$transaction.mockResolvedValue([sessionCriada]);
+                    mockPrisma.atendimento.create.mockResolvedValue(sessionCriada);
 
                     const result = await service.create(sessionToBeCreated as CreateSessionDto);
                     expect(result).toEqual(sessionCriada);
@@ -155,7 +158,7 @@ describe('SessionService', () => {
                     mockPrisma.usuario.findUnique.mockResolvedValueOnce(intern);
                     mockPrisma.usuario.findUnique.mockResolvedValueOnce(supervisor);
                     mockPrisma.atendimento.findFirst.mockResolvedValue(undefined);
-                    mockPrisma.$transaction.mockResolvedValue([sessionCriada]);
+                    mockPrisma.atendimento.create.mockResolvedValue(sessionCriada);
 
                     const result = await service.create(sessionToBeCreated as CreateSessionDto);
                     expect(result).toEqual(sessionCriada);
@@ -730,7 +733,6 @@ describe('SessionService', () => {
                 };
 
                 mockPrisma.atendimento.findUnique.mockResolvedValue(session);
-                mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.remove('uuid-session' as UUID);
                 expect(result).toEqual({ message: 'Sessão (uuid-session) cancelada com sucesso.' });
@@ -746,7 +748,6 @@ describe('SessionService', () => {
 
                 mockPrisma.atendimento.findUnique.mockResolvedValue(session);
                 mockPrisma.prontuario.findFirst.mockResolvedValue(undefined);
-                mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.remove('uuid-session' as UUID);
                 expect(result).toEqual({ message: 'Sessão (uuid-session) cancelada com sucesso.' });
@@ -765,7 +766,6 @@ describe('SessionService', () => {
                     id_Registro: 'uuid-pront',
                     id_Tipo: TipoProntuario.PSICOTERAPIA,
                 });
-                mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.remove('uuid-session' as UUID);
                 expect(result).toEqual({ message: 'Sessão (uuid-session) cancelada com sucesso.' });

@@ -2,10 +2,28 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { RoleAccess } from '../src/common/enums/status.enum';
 
-const prisma = new PrismaClient();
+// Seeding é provisionamento, não uma requisição de clínica específica — roda com
+// DIRECT_URL (role superuser/bypassrls), o mesmo caminho privilegiado das migrations,
+// em vez de arca_app (sujeito a RLS via FORCE ROW LEVEL SECURITY nas tabelas escopadas).
+const prisma = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
 
 async function main() {
     console.log('Iniciando processo de seed...');
+
+    let clinicaPadrao = await prisma.clinica.findFirst({
+        where: { slug: 'clinica-padrao' },
+    });
+    if (!clinicaPadrao) {
+        clinicaPadrao = await prisma.clinica.create({
+            data: {
+                nome: 'Clínica Padrão',
+                slug: 'clinica-padrao',
+            },
+        });
+        console.log('✅ Clínica padrão criada com sucesso!');
+    } else {
+        console.log('ℹ️  Clínica padrão já existe no banco de dados.');
+    }
 
     const existingRoles = await prisma.role.count();
     if (existingRoles === 0) {
@@ -164,7 +182,7 @@ async function main() {
             email: 'supervisor@arca.com',
             senha: 'Supervisor123!',
             roleId: RoleAccess.SUPERVISOR,
-            CRP: 'CRP-123456',
+            CRP: 'CRP123456',
             description: 'Usuário supervisor',
         },
         {
@@ -192,8 +210,9 @@ async function main() {
                     nome: usuario.nome,
                     email: usuario.email,
                     senhaHash: hashedPassword,
-                    CRP: usuario.CRP || null,
+                    CRP: usuario.CRP ?? null,
                     roleId: usuario.roleId,
+                    id_Clinica: clinicaPadrao.id_Clinica,
                 },
             });
             console.log(`✅ ${usuario.description} criado com sucesso!`);

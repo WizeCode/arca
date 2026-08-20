@@ -2,13 +2,14 @@ import {
     BadRequestException,
     ConflictException,
     ForbiddenException,
+    Inject,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
 import { HashingServiceProtocol } from 'src/auth/hash/hashing.service';
 import { UUID } from 'node:crypto';
 import { TokenDto } from 'src/common/dto/token.dto';
@@ -18,7 +19,7 @@ import { RoleAccess } from 'src/common/enums/status.enum';
 @Injectable()
 export class UsersService {
     constructor(
-        private prisma: PrismaService,
+        @Inject(TENANT_PRISMA) private prisma: TenantPrismaClient,
         private HashingService: HashingServiceProtocol,
     ) {}
 
@@ -74,7 +75,7 @@ export class UsersService {
                 senhaHash: passwordHash,
                 roleId: createUserDto.roleId,
                 CRP: createUserDto.crp ?? null,
-            },
+            } as Prisma.UsuarioUncheckedCreateInput,
             select: {
                 id_User: true,
                 nome: true,
@@ -118,7 +119,6 @@ export class UsersService {
     }
 
     async findOne(id: UUID, creator: TokenDto) {
-        // Lista apenas o usuário com nível de acesso menor ao do criador
         const user = await this.prisma.usuario.findFirst({
             where: {
                 id_User: id,

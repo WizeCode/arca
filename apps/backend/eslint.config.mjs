@@ -54,4 +54,10 @@ export default tseslint.config(
             '@typescript-eslint/no-unsafe-return': 'off',
         },
     },
+    {
+        files: ['prisma/seed.ts'],
+        rules: {
+            'no-console': 'off',
+        },
+    },
 );

@@ -1,7 +1,7 @@
 {
   "jest.jestCommandLine": "npm test --",
   "jest.rootPath": "apps/backend",
-  "jest.runMode": "on-demand",
+  "jest.runMode": "watch",
   "typescript.preferences.includePackageJsonAutoImports": "auto",
   "jest.useDashboardWhenAvailable": false,
   "jest.nodeEnv": {

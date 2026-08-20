@@ -18,7 +18,17 @@ import { TokenDto } from 'src/common/dto/token.dto';
 import { UUID } from 'node:crypto';
 
 function makeUser(access: RoleAccess, sub = 'uuid-user'): TokenDto {
-    return { sub: sub as UUID, name: 'Test User', email: 'test@test.com', access, iat: 0, exp: 0, aud: '', iss: '' };
+    return {
+        sub: sub as UUID,
+        name: 'Test User',
+        email: 'test@test.com',
+        access,
+        clinicaId: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+        iat: 0,
+        exp: 0,
+        aud: '',
+        iss: '',
+    };
 }
 
 function makeAtendimento(overrides: object = {}) {
@@ -69,7 +79,10 @@ const mockPrisma = {
         count: jest.fn(),
         update: jest.fn(),
     },
-    $transaction: jest.fn(),
+    // $tenantTransaction executa o callback passando o próprio mockPrisma como `tx` —
+    // os mocks de model já configurados acima funcionam como as chamadas feitas via
+    // `tx` dentro da transação.
+    $tenantTransaction: jest.fn((fn: (tx: unknown) => Promise<unknown>) => fn(mockPrisma)),
 };
 
 const mockPdfService = {
@@ -90,7 +103,8 @@ describe('MedicalRecordService', () => {
         jest.clearAllMocks();
         mockCryptoService.encrypt.mockReturnValue('encrypted-content');
         mockCryptoService.decryptConteudo.mockImplementation((c: unknown) => c);
-        service = new MedicalRecordService(mockPrisma as any, mockPdfService, mockCryptoService as any);
+        mockPrisma.$tenantTransaction.mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(mockPrisma));
+        service = new MedicalRecordService(mockPrisma, mockPdfService, mockCryptoService as any);
     });
 
     it('should be defined', () => {
@@ -167,18 +181,18 @@ describe('MedicalRecordService', () => {
                 it('should create triagem and return the prontuario', async () => {
                     const createdProntuario = makeProntuario();
                     mockPrisma.atendimento.findFirst.mockResolvedValue(makeAtendimento());
-                    mockPrisma.$transaction.mockResolvedValue([createdProntuario, {}]);
+                    mockPrisma.prontuario.create.mockResolvedValue(createdProntuario);
 
                     const result = await service.createTriagem(dto, makeUser(RoleAccess.ADMIN));
 
                     expect(mockCryptoService.encrypt).toHaveBeenCalledWith(dto.conteudo);
-                    expect(mockPrisma.$transaction).toHaveBeenCalled();
+                    expect(mockPrisma.$tenantTransaction).toHaveBeenCalled();
                     expect(result).toBe(createdProntuario);
                 });
 
                 it('should throw InternalServerErrorException when transaction fails', async () => {
                     mockPrisma.atendimento.findFirst.mockResolvedValue(makeAtendimento());
-                    mockPrisma.$transaction.mockRejectedValue(new Error('DB error'));
+                    mockPrisma.$tenantTransaction.mockRejectedValue(new Error('DB error'));
 
                     await expect(service.createTriagem(dto, makeUser(RoleAccess.ADMIN))).rejects.toThrow(
                         InternalServerErrorException,
@@ -231,7 +245,7 @@ describe('MedicalRecordService', () => {
                             ListaEspera: { id_Status: StatusListaEspera.TRIAGEM_APROVADA },
                         }),
                     );
-                    mockPrisma.$transaction.mockResolvedValue([createdProntuario, {}]);
+                    mockPrisma.prontuario.create.mockResolvedValue(createdProntuario);
 
                     const result = await service.createEvolucao(dto, makeUser(RoleAccess.ADMIN));
 
@@ -467,7 +481,6 @@ describe('MedicalRecordService', () => {
 
             it('should approve triagem without encaminhamento', async () => {
                 mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario());
-                mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.approveTriagem(
                     id,
@@ -480,7 +493,6 @@ describe('MedicalRecordService', () => {
 
             it('should approve triagem and create encaminhamento', async () => {
                 mockPrisma.prontuario.findUnique.mockResolvedValue(makeProntuario());
-                mockPrisma.$transaction.mockResolvedValue([]);
 
                 const result = await service.approveTriagem(
                     id,
@@ -525,8 +537,6 @@ describe('MedicalRecordService', () => {
                 mockPrisma.prontuario.findUnique.mockResolvedValue(
                     makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
                 );
-                mockPrisma.$transaction.mockResolvedValue([]);
-
                 const result = await service.approveEvolucao(
                     id,
                     { recebeuAlta: false, encaminhado: false },
@@ -540,8 +550,6 @@ describe('MedicalRecordService', () => {
                 mockPrisma.prontuario.findUnique.mockResolvedValue(
                     makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
                 );
-                mockPrisma.$transaction.mockResolvedValue([]);
-
                 const result = await service.approveEvolucao(
                     id,
                     { recebeuAlta: true, finalidade: 'Alta terapêutica', encaminhado: false },
@@ -555,8 +563,6 @@ describe('MedicalRecordService', () => {
                 mockPrisma.prontuario.findUnique.mockResolvedValue(
                     makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
                 );
-                mockPrisma.$transaction.mockResolvedValue([]);
-
                 const result = await service.approveEvolucao(
                     id,
                     {
@@ -575,8 +581,6 @@ describe('MedicalRecordService', () => {
                 mockPrisma.prontuario.findUnique.mockResolvedValue(
                     makeProntuario({ id_Tipo: TipoProntuario.PSICOTERAPIA }),
                 );
-                mockPrisma.$transaction.mockResolvedValue([]);
-
                 const result = await service.approveEvolucao(
                     id,
                     {

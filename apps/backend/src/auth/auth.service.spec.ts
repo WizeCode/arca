@@ -5,10 +5,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import jwtConfig from './config/jwt.config';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { UUID } from 'node:crypto';
 
 describe('AuthService', () => {
     let service: AuthService;
-    const mockPrisma = { usuario: { findFirst: jest.fn() } };
+    const mockPrisma = { $queryRaw: jest.fn() };
     const mockHashing = { compare: jest.fn() };
     const mockJwtService = { signAsync: jest.fn() };
 
@@ -18,6 +19,16 @@ describe('AuthService', () => {
         email: 'pedro@test.com',
         senhaHash: 'hash-qualquer',
         roleId: 4,
+        id_Clinica: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' as UUID,
+    };
+
+    const loginLookupRow = {
+        id_user: user.id_User,
+        nome: user.nome,
+        email: user.email,
+        senha_hash: user.senhaHash,
+        role_id: user.roleId,
+        id_clinica: user.id_Clinica,
     };
 
     beforeEach(async () => {
@@ -57,7 +68,7 @@ describe('AuthService', () => {
 
     describe('validateUser', () => {
         it('should return user data when credentials are valid', async () => {
-            mockPrisma.usuario.findFirst.mockResolvedValue(user);
+            mockPrisma.$queryRaw.mockResolvedValue([loginLookupRow]);
             mockHashing.compare.mockResolvedValue(true);
 
             const resultado = await service.validateUser({ email: 'pedro@test.com', password: '123456' });
@@ -67,11 +78,12 @@ describe('AuthService', () => {
                 nome: 'Pedro',
                 email: 'pedro@test.com',
                 roleId: 4,
+                id_Clinica: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
             });
         });
 
         it('should throw UnauthorizedException when user does not exist or is inactive', async () => {
-            mockPrisma.usuario.findFirst.mockResolvedValue(undefined);
+            mockPrisma.$queryRaw.mockResolvedValue([]);
 
             await expect(
                 service.validateUser({
@@ -82,7 +94,7 @@ describe('AuthService', () => {
         });
 
         it('should throw UnauthorizedException when password is incorrect', async () => {
-            mockPrisma.usuario.findFirst.mockResolvedValue(user);
+            mockPrisma.$queryRaw.mockResolvedValue([loginLookupRow]);
             mockHashing.compare.mockResolvedValue(false);
 
             await expect(
@@ -100,10 +112,6 @@ describe('AuthService', () => {
 
             const result = await service.login(user);
             expect(result).toEqual({
-                id: user.id_User,
-                name: user.nome,
-                email: user.email,
-                roleId: user.roleId,
                 token: 'token-fake',
             });
         });

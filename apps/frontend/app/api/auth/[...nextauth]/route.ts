@@ -1,7 +1,15 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { jwtDecode } from 'jwt-decode';
 
 import { apiService } from '@/lib/api';
+
+interface BackendTokenClaims {
+    sub: string;
+    name: string;
+    email: string;
+    access: number;
+}
 
 const handler = NextAuth({
     providers: [
@@ -19,12 +27,14 @@ const handler = NextAuth({
                 });
 
                 if (user) {
+                    const claims = jwtDecode<BackendTokenClaims>(user.token);
+
                     return {
                         token: user.token,
-                        id: user.id,
-                        roleId: user.roleId,
-                        name: user.name,
-                        email: user.email
+                        id: claims.sub,
+                        roleId: String(claims.access),
+                        name: claims.name,
+                        email: claims.email
                     };
                 }
 
