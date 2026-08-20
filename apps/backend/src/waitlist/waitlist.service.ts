@@ -26,7 +26,6 @@ export class WaitlistService {
     ) {}
 
     // Endpoint público, sem tenant no contexto: resolve a única clínica ativa (ADR 0001).
-    // Deixa de ser válido com uma segunda clínica real — vira bug silencioso até então.
     private async resolveClinicaAtivaContext(): Promise<void> {
         const clinica = await this.prisma.clinica.findFirstOrThrow({ where: { isActive: true } });
         this.cls.set('clinicaId', clinica.id_Clinica as UUID);

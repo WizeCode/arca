@@ -235,11 +235,6 @@ export class SessionService {
         }
 
         return this.prisma.$tenantTransaction(async (tx) => {
-            // `as ...UncheckedCreateInput`: id_Clinica é obrigatório no tipo gerado pelo Prisma,
-            // mas Prisma.TransactionClient não conhece a extension — tenant.extension.ts
-            // carimba id_Clinica em runtime via $allOperations (coberto por
-            // tenant.extension.spec.ts). Não adicionar id_Clinica manualmente aqui.
-            // 1. Cria a sessão
             const createdSession = await tx.atendimento.create({
                 data: {
                     dataHoraInicio: session.dataHoraInicio,
@@ -252,7 +247,6 @@ export class SessionService {
                 } as Prisma.AtendimentoUncheckedCreateInput,
             });
 
-            // 2. Atualiza o status da lista de espera (se necessário)
             if (novoStatusListaEspera) {
                 await tx.listaEspera.update({
                     where: { id_Lista: session.id_Lista },
@@ -426,7 +420,6 @@ export class SessionService {
 
         let novoStatusListaEspera: StatusListaEspera | null = null;
         if (session.id_Tipo_Atendimento === TipoAtendimento.TRIAGEM) {
-            // Se cancelou uma triagem, paciente volta para "Em espera"
             novoStatusListaEspera = StatusListaEspera.EM_ESPERA;
         } else if (session.id_Tipo_Atendimento === TipoAtendimento.PSICOTERAPIA) {
             const hasOtherPsicoterapia = await this.prisma.prontuario.findFirst({

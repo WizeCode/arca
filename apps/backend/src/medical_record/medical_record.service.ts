@@ -87,10 +87,6 @@ export class MedicalRecordService {
 
         try {
             return await this.prisma.$tenantTransaction(async (tx) => {
-                // `as ...UncheckedCreateInput`: id_Clinica é obrigatório no tipo gerado pelo Prisma,
-                // mas Prisma.TransactionClient não conhece a extension — tenant.extension.ts
-                // carimba id_Clinica em runtime via $allOperations (coberto por
-                // tenant.extension.spec.ts). Não adicionar id_Clinica manualmente aqui.
                 const relatorioTriagem = await tx.prontuario.create({
                     data: {
                         id_Atendimento: createTriagemProntuarioDto.id_Sessao,
@@ -553,7 +549,6 @@ export class MedicalRecordService {
     }
 
     async generateEncaminhamentoPdf(id: UUID, user: TokenDto, res: Response) {
-        // Buscar o prontuário específico de encaminhamento pelo ID do registro
         const encaminhamentoRecord = await this.prisma.prontuario.findUnique({
             where: { id_Registro: id },
             include: {

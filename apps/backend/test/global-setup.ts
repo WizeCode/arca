@@ -4,8 +4,6 @@ import { promisify } from 'node:util';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 declare global {
-    // eslint-disable-next-line no-var -- Jest só compartilha estado entre globalSetup e
-    // globalTeardown (mesmo processo Node) via globalThis; var é exigido para module augmentation.
     var __ARCA_PG_CONTAINER__: StartedPostgreSqlContainer | undefined;
 }
 

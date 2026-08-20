@@ -69,10 +69,6 @@ export class UsersService {
         const passwordHash = await this.HashingService.hash(createUserDto.senha);
 
         return this.prisma.usuario.create({
-            // `as Prisma.UsuarioUncheckedCreateInput`: id_Clinica é obrigatório no tipo
-            // gerado pelo Prisma, mas tenant.extension.ts carimba id_Clinica em runtime via
-            // $allOperations (coberto por tenant.extension.spec.ts). Não adicionar id_Clinica
-            // manualmente aqui.
             data: {
                 nome: createUserDto.nome,
                 email: createUserDto.email,
@@ -123,7 +119,6 @@ export class UsersService {
     }
 
     async findOne(id: UUID, creator: TokenDto) {
-        // Lista apenas o usuário com nível de acesso menor ao do criador
         const user = await this.prisma.usuario.findFirst({
             where: {
                 id_User: id,
