@@ -1,6 +1,12 @@
 import { INestApplication } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
+import { UUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { createTestApp } from './setup';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
+import type { TenantClsStore } from 'src/prisma/tenant.extension';
+import { RoleAccess } from 'src/common/enums/status.enum';
 
 /**
  * ADR 0001, seção 5 — auth.service.ts#validateUser busca o Usuario por e-mail
@@ -13,10 +19,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 describe('Login lookup vs. Row-Level Security (e2e)', () => {
     let app: INestApplication;
     let prisma: PrismaService;
+    let tenantPrisma: TenantPrismaClient;
+    let cls: ClsService<TenantClsStore>;
 
     beforeAll(async () => {
         app = await createTestApp();
         prisma = app.get(PrismaService);
+        tenantPrisma = app.get(TENANT_PRISMA);
+        cls = app.get(ClsService);
     });
 
     afterAll(async () => {
@@ -54,5 +64,43 @@ describe('Login lookup vs. Row-Level Security (e2e)', () => {
         `;
 
         expect(rows[0].c).toBe(0);
+    });
+
+    describe('clínica inativa bloqueia buscar_usuario_login', () => {
+        const email = 'usuario-clinica-inativa-login@arca.com';
+        let clinicaInativaId: UUID;
+
+        beforeAll(async () => {
+            const clinicaInativa = await prisma.clinica.create({
+                data: { nome: 'Clínica Inativa (teste e2e)', slug: 'clinica-inativa-login-teste', isActive: false },
+            });
+            clinicaInativaId = clinicaInativa.id_Clinica as UUID;
+
+            await cls.runWith({ clinicaId: clinicaInativaId }, async () => {
+                await tenantPrisma.usuario.create({
+                    data: {
+                        nome: 'Usuário Clínica Inativa',
+                        email,
+                        senhaHash: 'hash-placeholder-teste',
+                        roleId: RoleAccess.ADMIN,
+                    } as Prisma.UsuarioUncheckedCreateInput,
+                });
+            });
+        });
+
+        afterAll(async () => {
+            await cls.runWith({ clinicaId: clinicaInativaId }, async () => {
+                await tenantPrisma.usuario.deleteMany({ where: { email } });
+            });
+            await prisma.clinica.delete({ where: { id_Clinica: clinicaInativaId } });
+        });
+
+        it('returns no rows from buscar_usuario_login for a user whose clinica is inactive', async () => {
+            const rows = await prisma.$queryRaw<unknown[]>`
+                SELECT * FROM buscar_usuario_login(${email})
+            `;
+
+            expect(rows).toHaveLength(0);
+        });
     });
 });

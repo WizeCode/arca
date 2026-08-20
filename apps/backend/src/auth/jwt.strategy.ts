@@ -34,8 +34,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: TokenDto) {
-        // Descobre a clínica atual do usuário antes de podermos setar app.current_clinica_id —
-        // por isso passa pela função SECURITY DEFINER buscar_usuario_por_id, não por tenantPrisma.
         const rows = await this.prisma.$queryRaw<JwtLookupRow[]>`
             SELECT * FROM buscar_usuario_por_id(${payload.sub}::uuid)
         `;

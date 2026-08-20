@@ -1,10 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { createTestApp } from './setup';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TENANT_PRISMA, TenantPrismaClient } from 'src/prisma/prisma.module';
 import { TenantClsStore } from 'src/prisma/tenant.extension';
+import { RoleAccess } from 'src/common/enums/status.enum';
 
 /**
  * ADR 0001, seção 5 — jwt.strategy.ts#validate busca o Usuario por id_User
@@ -83,5 +85,45 @@ describe('JWT lookup vs. Row-Level Security (e2e)', () => {
         `;
 
         expect(rows[0].rolbypassrls).toBe(false);
+    });
+
+    describe('clínica inativa bloqueia buscar_usuario_por_id', () => {
+        const email = 'usuario-clinica-inativa-jwt@arca.com';
+        let clinicaInativaId: UUID;
+        let usuarioClinicaInativaId: string;
+
+        beforeAll(async () => {
+            const clinicaInativa = await prisma.clinica.create({
+                data: { nome: 'Clínica Inativa (teste e2e jwt)', slug: 'clinica-inativa-jwt-teste', isActive: false },
+            });
+            clinicaInativaId = clinicaInativa.id_Clinica as UUID;
+
+            await cls.runWith({ clinicaId: clinicaInativaId }, async () => {
+                const usuario = await tenantPrisma.usuario.create({
+                    data: {
+                        nome: 'Usuário Clínica Inativa',
+                        email,
+                        senhaHash: 'hash-placeholder-teste',
+                        roleId: RoleAccess.ADMIN,
+                    } as Prisma.UsuarioUncheckedCreateInput,
+                });
+                usuarioClinicaInativaId = usuario.id_User;
+            });
+        });
+
+        afterAll(async () => {
+            await cls.runWith({ clinicaId: clinicaInativaId }, async () => {
+                await tenantPrisma.usuario.deleteMany({ where: { email } });
+            });
+            await prisma.clinica.delete({ where: { id_Clinica: clinicaInativaId } });
+        });
+
+        it('returns no rows from buscar_usuario_por_id for a user whose clinica is inactive', async () => {
+            const rows = await prisma.$queryRaw<unknown[]>`
+                SELECT * FROM buscar_usuario_por_id(${usuarioClinicaInativaId}::uuid)
+            `;
+
+            expect(rows).toHaveLength(0);
+        });
     });
 });
