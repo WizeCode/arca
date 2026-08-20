@@ -39,7 +39,7 @@ Decisões travadas para o frontend (detalhe completo no `CLAUDE.md`):
 
 ## 4. Modelo de domínio
 
-O diagrama abaixo é o núcleo relacional do sistema. Os campos `id_Clinica` marcados já estão **implementados e validados** (ver ADR 0001 e ADR 0004) na branch `107-adicionar-modelo-clinica-e-clinicaid-no-schema-adr-001` — merge para `development` adiado até existir uma segunda clínica real. O schema abaixo ainda não reflete o banco atual desta branch.
+O diagrama abaixo é o núcleo relacional do sistema. Os campos `id_Clinica` marcados já estão **implementados e validados** (ver ADR 0001 e ADR 0005) via a branch `107-adicionar-modelo-clinica-e-clinicaid-no-schema-adr-001`, com PR aberta pra `development`. O schema abaixo ainda não reflete o merge desta branch.
 
 ```mermaid
 erDiagram
@@ -139,8 +139,8 @@ Essa separação de roles é a base sobre a qual o enforcement de tenant via Row
 |---|---|---|
 | Backend — módulos core | ✅ Pronto | auth, users, waitlist, session, medical_record, audit, crypto, pdf |
 | Backend — segurança base | ✅ Pronto | RBAC, rate limiting, helmet, JWT audience/issuer, auditoria global |
-| Backend — multi-tenancy (schema, extension, RLS) | ✅ Implementado e validado, merge adiado | Branch `107-adicionar-modelo-clinica-e-clinicaid-no-schema-adr-001` — ver ADR 0004. `development` continua single-tenant até 2ª clínica real |
-| Backend — seed pra banco novo com RLS ativo | 🔜 Pendência conhecida | `seed.ts` não popula banco do zero com `FORCE ROW LEVEL SECURITY` — ver ADR 0004, prioridade antes do merge final |
+| Backend — multi-tenancy (schema, extension, RLS) | ✅ Implementado, validado, PR aberta pra `development` | Branch `107-adicionar-modelo-clinica-e-clinicaid-no-schema-adr-001` — ver ADR 0005 (supera o adiamento da ADR 0004). Landmine do cadastro público (slug) e gate de `Clinica.isActive` no login/JWT corrigidos antes do merge |
+| Backend — seed pra banco novo com RLS ativo | 🔜 Pendência conhecida | `seed.ts` não popula banco do zero com `FORCE ROW LEVEL SECURITY` — ver ADR 0005, prioridade antes de depender disso operacionalmente |
 | Backend — entidades de domínio ricas | 🔜 Planejado | Direção decidida (`Atendimento`, `Prontuario` com `fromPrisma()`), ainda não no código |
 | Frontend — shell da plataforma | ✅ Pronto | Sidebar, proteção de rota, dashboard vazio em `/plataforma` |
 | Frontend — módulos de domínio | ⏳ Não iniciado | Pacientes, atendimentos, waitlist etc. — tracked via milestones M0–M12 no GitHub |
@@ -155,7 +155,8 @@ Ficam em `docs/adr/`, um arquivo por decisão, numerados em ordem (`0001-`, `000
 - `0001-multi-tenancy-estrategia-hibrida.md` — banco único compartilhado com `clinicaId`, ao invés de um banco por clínica
 - `0002-banco-de-dados-nuvem-gerenciada.md` — **superada pela 0003**
 - `0003-banco-de-dados-producao-em-aberto.md` — self-hosted aceitável em teste; escolha do banco de produção fica em aberto, decidida por custo
-- `0004-multi-tenancy-implementado-merge-adiado.md` — implementação completa do #107 preservada em branch própria, merge adiado até 2ª clínica real
+- `0004-multi-tenancy-implementado-merge-adiado.md` — **decisão de adiar o merge superada pela 0005**
+- `0005-multi-tenancy-merge-para-development.md` — merge pra `development` antes da 2ª clínica real, após corrigir dois bugs de isolamento encontrados na revisão
 
 Quando surgir uma dúvida do tipo "por que decidimos X" no futuro, a resposta deve estar aqui, não na memória de ninguém.
 
