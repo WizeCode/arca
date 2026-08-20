@@ -25,14 +25,17 @@ export class WaitlistService {
         private cls: ClsService<TenantClsStore>,
     ) {}
 
-    // Endpoint público, sem tenant no contexto: resolve a única clínica ativa (ADR 0001).
-    private async resolveClinicaAtivaContext(): Promise<void> {
-        const clinica = await this.prisma.clinica.findFirstOrThrow({ where: { isActive: true } });
+    // Endpoints públicos, sem tenant no contexto: resolve a clínica pelo slug da própria URL.
+    private async resolveClinicaAtivaContext(clinicaSlug: string): Promise<void> {
+        const clinica = await this.prisma.clinica.findFirst({ where: { slug: clinicaSlug, isActive: true } });
+        if (!clinica) {
+            throw new NotFoundException('Clínica não encontrada.');
+        }
         this.cls.set('clinicaId', clinica.id_Clinica as UUID);
     }
 
-    async create(body: CreateWaitlistDto) {
-        await this.resolveClinicaAtivaContext();
+    async create(clinicaSlug: string, body: CreateWaitlistDto) {
+        await this.resolveClinicaAtivaContext(clinicaSlug);
 
         const existingActiveEntry = await this.prisma.listaEspera.findFirst({
             where: {
@@ -120,8 +123,8 @@ export class WaitlistService {
         };
     }
 
-    async findPublicPosition(id: UUID) {
-        await this.resolveClinicaAtivaContext();
+    async findPublicPosition(clinicaSlug: string, id: UUID) {
+        await this.resolveClinicaAtivaContext(clinicaSlug);
 
         const waitlistEntry = await this.prisma.listaEspera.findUnique({
             where: { id_Lista: id },
@@ -152,8 +155,8 @@ export class WaitlistService {
         };
     }
 
-    async findPositions() {
-        await this.resolveClinicaAtivaContext();
+    async findPositions(clinicaSlug: string) {
+        await this.resolveClinicaAtivaContext(clinicaSlug);
 
         const waitlistEntries = await this.prisma.listaEspera.findMany({
             select: {

@@ -13,13 +13,14 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 export class WaitlistController {
     constructor(private readonly waitlistService: WaitlistService) {}
 
-    @ApiOperation({ summary: 'Cadastro público de paciente na lista de espera' })
+    @ApiOperation({ summary: 'Cadastro público de paciente na lista de espera de uma clínica' })
     @ApiResponse({ status: 201, description: 'Paciente cadastrado. Retorna UUID para consulta de posição.' })
     @ApiResponse({ status: 400, description: 'CPF já cadastrado ou dados inválidos.' })
+    @ApiResponse({ status: 404, description: 'Clínica não encontrada.' })
     @Throttle({ default: { ttl: 60_000, limit: 5 } })
-    @Post()
-    create(@Body() body: CreateWaitlistDto) {
-        return this.waitlistService.create(body);
+    @Post(':clinicaSlug')
+    create(@Param('clinicaSlug') clinicaSlug: string, @Body() body: CreateWaitlistDto) {
+        return this.waitlistService.create(clinicaSlug, body);
     }
 
     @ApiOperation({ summary: 'Listar todos os pacientes da lista de espera (requer autenticação)' })
@@ -32,19 +33,20 @@ export class WaitlistController {
         return this.waitlistService.findAll(pagination);
     }
 
-    @ApiOperation({ summary: 'Estatísticas públicas da fila (quantidade e última atualização)' })
+    @ApiOperation({ summary: 'Estatísticas públicas da fila de uma clínica (quantidade e última atualização)' })
     @ApiResponse({ status: 200, description: 'Retorna { qntFila, ultimaAtualizacao }.' })
-    @Get('stats')
-    findPositions() {
-        return this.waitlistService.findPositions();
+    @ApiResponse({ status: 404, description: 'Clínica não encontrada.' })
+    @Get(':clinicaSlug/stats')
+    findPositions(@Param('clinicaSlug') clinicaSlug: string) {
+        return this.waitlistService.findPositions(clinicaSlug);
     }
 
     @ApiOperation({ summary: 'Consultar posição pública do paciente pelo UUID de cadastro' })
     @ApiResponse({ status: 200, description: 'Retorna posição na fila e dados básicos do paciente.' })
-    @ApiResponse({ status: 404, description: 'Paciente não encontrado.' })
-    @Get(':id/position')
-    findPublicPosition(@Param('id', ParseUUIDPipe) id: UUID) {
-        return this.waitlistService.findPublicPosition(id);
+    @ApiResponse({ status: 404, description: 'Clínica ou paciente não encontrado.' })
+    @Get(':clinicaSlug/:id/position')
+    findPublicPosition(@Param('clinicaSlug') clinicaSlug: string, @Param('id', ParseUUIDPipe) id: UUID) {
+        return this.waitlistService.findPublicPosition(clinicaSlug, id);
     }
 
     @ApiOperation({ summary: 'Buscar paciente por ID (requer autenticação)' })
