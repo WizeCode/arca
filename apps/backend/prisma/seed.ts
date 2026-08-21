@@ -164,7 +164,7 @@ async function main() {
             email: 'supervisor@arca.com',
             senha: 'Supervisor123!',
             roleId: RoleAccess.SUPERVISOR,
-            CRP: 'CRP-123456',
+            CRP: '123456',
             description: 'Usuário supervisor',
         },
         {
