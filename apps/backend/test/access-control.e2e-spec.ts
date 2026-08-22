@@ -19,9 +19,7 @@ describe('Access Control (e2e)', () => {
 
     let adminToken: string;
     let estagiario1Token: string;
-    let estagiario2Token: string;
     let supervisor1Token: string;
-    let supervisor2Token: string;
 
     let estagiario1: { id_User: string };
     let supervisor1: { id_User: string };
@@ -71,16 +69,8 @@ describe('Access Control (e2e)', () => {
             await request(server).post('/auth/login').send({ email: 'estagiario@arca.com', password: 'Estagiario123!' })
         ).body.token;
 
-        estagiario2Token = (
-            await request(server).post('/auth/login').send({ email: 'estagiario2@e2e.com', password: 'Est2E2E123!' })
-        ).body.token;
-
         supervisor1Token = (
             await request(server).post('/auth/login').send({ email: 'supervisor@arca.com', password: 'Supervisor123!' })
-        ).body.token;
-
-        supervisor2Token = (
-            await request(server).post('/auth/login').send({ email: 'supervisor2@e2e.com', password: 'Sup2E2E123!' })
         ).body.token;
 
         paciente1 = await prisma.listaEspera.create({

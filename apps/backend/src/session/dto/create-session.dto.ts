@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { UUID } from 'node:crypto';
+import { TipoAtendimento } from 'src/common/enums/status.enum';
 
 export class CreateSessionDto {
     @ApiProperty({ example: '2025-01-15T10:00:00Z', description: 'Data e hora de início do atendimento (ISO 8601)' })
@@ -30,9 +31,9 @@ export class CreateSessionDto {
     id_Supervisor_Executor: UUID;
 
     @ApiProperty({ example: 1, description: 'Tipo do atendimento: 1=Triagem, 2=Psicoterapia' })
-    @IsInt()
+    @IsEnum(TipoAtendimento)
     @IsNotEmpty()
-    id_Tipo_Atendimento: number;
+    id_Tipo_Atendimento: TipoAtendimento;
 
     @ApiPropertyOptional({
         example: 'Paciente solicitou horário vespertino.',

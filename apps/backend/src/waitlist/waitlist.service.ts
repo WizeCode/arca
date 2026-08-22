@@ -96,11 +96,12 @@ export class WaitlistService {
         });
 
         const posicao = posicaoNaLista + 1;
+        const status: StatusListaEspera = waitlistEntry.id_Status;
 
         return {
             ...waitlistEntry,
             posicaoNaLista: posicao,
-            situacao: waitlistEntry.id_Status === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
+            situacao: status === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
         };
     }
 
@@ -127,10 +128,12 @@ export class WaitlistService {
             },
         });
 
+        const status: StatusListaEspera = waitlistEntry.id_Status;
+
         return {
             ...waitlistEntry,
             posicaoNaLista: posicaoNaLista + 1,
-            situacao: waitlistEntry.id_Status === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
+            situacao: status === StatusListaEspera.EM_ESPERA ? 'Ativo' : 'Inativo',
         };
     }
 
@@ -212,27 +215,25 @@ export class WaitlistService {
         if (!waitlistEntry) {
             throw new NotFoundException('Paciente não encontrado na lista de espera.');
         }
-        if (waitlistEntry.id_Status === StatusListaEspera.DESATIVADO) {
+        const status: StatusListaEspera = waitlistEntry.id_Status;
+        if (status === StatusListaEspera.DESATIVADO) {
             throw new BadRequestException('Paciente já está desativado na lista de espera.');
         }
-        if (
-            waitlistEntry.id_Status === StatusListaEspera.RECEBEU_ALTA ||
-            waitlistEntry.id_Status === StatusListaEspera.ENCAMINHADO
-        ) {
+        if (status === StatusListaEspera.RECEBEU_ALTA || status === StatusListaEspera.ENCAMINHADO) {
             throw new BadRequestException(
                 'Não é possível desativar um paciente que já recebeu alta ou foi encaminhado.',
             );
         }
-        if (waitlistEntry.id_Status === StatusListaEspera.EM_PSICOTERAPIA) {
+        if (status === StatusListaEspera.EM_PSICOTERAPIA) {
             throw new BadRequestException('Não é possível desativar um paciente que está em psicoterapia.');
         }
-        if (waitlistEntry.id_Status === StatusListaEspera.TRIAGEM_APROVADA) {
+        if (status === StatusListaEspera.TRIAGEM_APROVADA) {
             throw new BadRequestException('Não é possível desativar um paciente com triagem aprovada');
         }
-        if (waitlistEntry.id_Status === StatusListaEspera.EM_TRIAGEM) {
+        if (status === StatusListaEspera.EM_TRIAGEM) {
             throw new BadRequestException('Não é possível desativar um paciente que está em triagem.');
         }
-        if (waitlistEntry.id_Status !== StatusListaEspera.EM_ESPERA) {
+        if (status !== StatusListaEspera.EM_ESPERA) {
             throw new BadRequestException('Apenas pacientes com status "Em espera" podem ser desativados.');
         }
 

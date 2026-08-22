@@ -63,11 +63,13 @@ export class MedicalRecordService {
             },
         });
         if (!atendimento) throw new NotFoundException('Atendimento não encontrado.');
-        if (atendimento?.id_Tipo_Atendimento !== TipoAtendimento.TRIAGEM)
-            throw new BadRequestException('Atendimento não é de triagem.');
-        if (atendimento.id_Status !== StatusAtendimento.ATIVO)
+        const atendimentoTipo: TipoAtendimento = atendimento.id_Tipo_Atendimento;
+        const atendimentoStatus: StatusAtendimento = atendimento.id_Status;
+        const listaEsperaStatus: StatusListaEspera | undefined = atendimento.ListaEspera?.id_Status;
+        if (atendimentoTipo !== TipoAtendimento.TRIAGEM) throw new BadRequestException('Atendimento não é de triagem.');
+        if (atendimentoStatus !== StatusAtendimento.ATIVO)
             throw new BadRequestException('Atendimento não está ativo ou já foi concluido.');
-        if (atendimento.ListaEspera?.id_Status !== StatusListaEspera.EM_TRIAGEM)
+        if (listaEsperaStatus !== StatusListaEspera.EM_TRIAGEM)
             throw new BadRequestException(
                 'Paciente ja possuí triagem concluída ou em andamento. Não é possível criar outra triagem.',
             );
@@ -129,8 +131,10 @@ export class MedicalRecordService {
         });
 
         if (!prontuario) throw new NotFoundException('Registro não encontrado.');
-        if (prontuario.id_Tipo !== TipoProntuario.TRIAGEM) throw new BadRequestException('Registro não é de triagem.');
-        if (prontuario.id_Status !== StatusProntuario.EM_APROVACAO)
+        const prontuarioTipo: TipoProntuario = prontuario.id_Tipo;
+        const prontuarioStatus: StatusProntuario = prontuario.id_Status;
+        if (prontuarioTipo !== TipoProntuario.TRIAGEM) throw new BadRequestException('Registro não é de triagem.');
+        if (prontuarioStatus !== StatusProntuario.EM_APROVACAO)
             throw new BadRequestException('Triagem já foi aprovada, não é possível alterar os dados.');
 
         if (!prontuario.atendimento?.id_Supervisor_Executor)
@@ -165,8 +169,10 @@ export class MedicalRecordService {
         });
 
         if (!prontuario) throw new NotFoundException('Registro não encontrado.');
-        if (prontuario.id_Tipo !== TipoProntuario.TRIAGEM) throw new BadRequestException('Registro não é de triagem.');
-        if (prontuario.id_Status !== StatusProntuario.EM_APROVACAO)
+        const prontuarioTipo: TipoProntuario = prontuario.id_Tipo;
+        const prontuarioStatus: StatusProntuario = prontuario.id_Status;
+        if (prontuarioTipo !== TipoProntuario.TRIAGEM) throw new BadRequestException('Registro não é de triagem.');
+        if (prontuarioStatus !== StatusProntuario.EM_APROVACAO)
             throw new BadRequestException('Triagem já foi aprovada.');
         if (!prontuario.atendimento?.id_Supervisor_Executor)
             throw new InternalServerErrorException('Dados do atendimento inválidos.');
@@ -258,12 +264,14 @@ export class MedicalRecordService {
             },
         });
         if (!atendimento) throw new NotFoundException('Atendimento não encontrado.');
-        if (atendimento?.id_Tipo_Atendimento !== TipoAtendimento.PSICOTERAPIA)
+        const atendimentoTipo: TipoAtendimento = atendimento.id_Tipo_Atendimento;
+        const atendimentoStatus: StatusAtendimento = atendimento.id_Status;
+        if (atendimentoTipo !== TipoAtendimento.PSICOTERAPIA)
             throw new BadRequestException('Atendimento não é de psicoterapia');
-        if (atendimento.id_Status !== StatusAtendimento.ATIVO)
+        if (atendimentoStatus !== StatusAtendimento.ATIVO)
             throw new BadRequestException('Atendimento não está ativo ou já foi concluido.');
 
-        const status = atendimento.ListaEspera?.id_Status;
+        const status: StatusListaEspera | undefined = atendimento.ListaEspera?.id_Status;
         if (status !== StatusListaEspera.TRIAGEM_APROVADA && status !== StatusListaEspera.EM_PSICOTERAPIA)
             throw new BadRequestException(
                 'Paciente não possuí triagem aprovada. Não é possível criar um registro de psicoterapia.',
@@ -329,9 +337,11 @@ export class MedicalRecordService {
         });
 
         if (!prontuario) throw new NotFoundException('Registro não encontrado.');
-        if (prontuario.id_Tipo !== TipoProntuario.PSICOTERAPIA)
+        const prontuarioTipo: TipoProntuario = prontuario.id_Tipo;
+        const prontuarioStatus: StatusProntuario = prontuario.id_Status;
+        if (prontuarioTipo !== TipoProntuario.PSICOTERAPIA)
             throw new BadRequestException('Registro não é de evolução/psicoterapia.');
-        if (prontuario.id_Status !== StatusProntuario.EM_APROVACAO)
+        if (prontuarioStatus !== StatusProntuario.EM_APROVACAO)
             throw new BadRequestException('Registro de evolução já foi aprovado, não é possível alterar os dados.');
 
         if (!prontuario.atendimento?.id_Supervisor_Executor)
@@ -366,9 +376,11 @@ export class MedicalRecordService {
         });
 
         if (!prontuario) throw new NotFoundException('Registro não encontrado.');
-        if (prontuario.id_Tipo !== TipoProntuario.PSICOTERAPIA)
+        const prontuarioTipo: TipoProntuario = prontuario.id_Tipo;
+        const prontuarioStatus: StatusProntuario = prontuario.id_Status;
+        if (prontuarioTipo !== TipoProntuario.PSICOTERAPIA)
             throw new BadRequestException('Registro não é de registro em psicoterapia.');
-        if (prontuario.id_Status !== StatusProntuario.EM_APROVACAO)
+        if (prontuarioStatus !== StatusProntuario.EM_APROVACAO)
             throw new BadRequestException('Registro de psicoterapia já foi aprovado.');
         if (!prontuario.atendimento?.id_Supervisor_Executor)
             throw new InternalServerErrorException('Dados do atendimento inválidos.');
@@ -516,15 +528,18 @@ export class MedicalRecordService {
     async generateAltaPdf(id: UUID, user: TokenDto, res: Response) {
         const paciente = await this.findOne(id, user);
 
-        const atdComAlta = paciente.Atendimento.find((atd) =>
-            atd.Prontuario.some((p) => p.id_Tipo === TipoProntuario.ALTA),
-        );
+        const isAltaRecord = (p: { id_Tipo: number }) => {
+            const tipo: TipoProntuario = p.id_Tipo;
+            return tipo === TipoProntuario.ALTA;
+        };
+
+        const atdComAlta = paciente.Atendimento.find((atd) => atd.Prontuario.some(isAltaRecord));
 
         if (!atdComAlta) {
             throw new NotFoundException('Registro de Alta não encontrado para este paciente.');
         }
 
-        const altaRecord = atdComAlta.Prontuario.find((p) => p.id_Tipo === TipoProntuario.ALTA)!;
+        const altaRecord = atdComAlta.Prontuario.find(isAltaRecord)!;
         const supervisorNome = atdComAlta.supervisorExecutor?.nome ?? 'N/A';
         const supervisorCRP = atdComAlta.supervisorExecutor?.CRP ?? 'N/A';
 
@@ -578,8 +593,9 @@ export class MedicalRecordService {
         if (!encaminhamentoRecord) {
             throw new NotFoundException('Registro de Encaminhamento não encontrado.');
         }
+        const encaminhamentoTipo: TipoProntuario = encaminhamentoRecord.id_Tipo;
 
-        if (encaminhamentoRecord.id_Tipo !== TipoProntuario.ENCAMINHAMENTO) {
+        if (encaminhamentoTipo !== TipoProntuario.ENCAMINHAMENTO) {
             throw new BadRequestException('O registro fornecido não é do tipo Encaminhamento.');
         }
 

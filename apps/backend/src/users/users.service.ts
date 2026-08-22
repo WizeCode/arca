@@ -22,7 +22,7 @@ export class UsersService {
         private HashingService: HashingServiceProtocol,
     ) {}
 
-    private canActOnUser(actorAccess: number, targetRoleId: number): boolean {
+    private canActOnUser(actorAccess: RoleAccess, targetRoleId: RoleAccess): boolean {
         return actorAccess < targetRoleId || (actorAccess === RoleAccess.ADMIN && targetRoleId === RoleAccess.ADMIN);
     }
 
@@ -44,9 +44,10 @@ export class UsersService {
                 throw new BadRequestException('E-mail já cadastrado.');
             }
 
+            const existingUserRole: RoleAccess = existingUser.roleId;
             const canReactivate =
-                creator.access < existingUser.roleId ||
-                (creator.access === RoleAccess.ADMIN && existingUser.roleId === RoleAccess.ADMIN);
+                creator.access < existingUserRole ||
+                (creator.access === RoleAccess.ADMIN && existingUserRole === RoleAccess.ADMIN);
 
             if (canReactivate) {
                 throw new ConflictException({
@@ -187,7 +188,8 @@ export class UsersService {
         };
 
         if (updateUserDto.crp !== undefined) {
-            if (user.roleId !== RoleAccess.SUPERVISOR) {
+            const userRole: RoleAccess = user.roleId;
+            if (userRole !== RoleAccess.SUPERVISOR) {
                 throw new BadRequestException(
                     'O campo CRP (Conselho Regional de Psicologia) só pode ser definido para usuários do tipo Supervisor.',
                 );
@@ -251,7 +253,8 @@ export class UsersService {
             throw new BadRequestException('Este usuário já está ativo.');
         }
 
-        if (creator.access >= user.roleId && creator.access !== RoleAccess.ADMIN) {
+        const userRole: RoleAccess = user.roleId;
+        if (creator.access >= userRole && creator.access !== RoleAccess.ADMIN) {
             throw new ForbiddenException('Você não tem permissão para reativar um usuário deste nível de acesso.');
         }
 
